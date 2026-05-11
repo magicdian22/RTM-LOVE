@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水路旅人：密室逃脫劇本產生器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- html2pdf.js for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f0fdfa; }
+        .step-content { display: none; animation: fadeIn 0.5s; }
+        .step-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        /* Custom Scrollbar for output */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* Highlight animation for knowledge base */
+        .knowledge-flash { animation: flashBg 1.5s ease-out; }
+        @keyframes flashBg { 0% { background-color: #ccfbf1; } 100% { background-color: #f8fafc; } }
+        /* Custom form transitions */
+        .custom-char-panel { transition: all 0.3s ease; overflow: hidden; }
+        .custom-char-panel.hidden { max-height: 0; opacity: 0; margin-top: 0; padding-top: 0; padding-bottom: 0; border-width: 0; }
+        .custom-char-panel.visible { max-height: 500px; opacity: 1; margin-top: 1rem; }
+        /* AI & Export Output Prose Styling */
+        .ai-prose h3 { font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem; border-left: 4px solid #8b5cf6; padding-left: 0.75rem; }
+        .ai-prose p { margin-bottom: 1rem; line-height: 1.7; color: #334155; }
+        .ai-prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #475569; }
+        .ai-prose li { margin-bottom: 0.5rem; }
+        .ai-prose strong { color: #0f172a; }
+    </style>
+</head>
+<body class="text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header 更新標題 -->
+    <header class="bg-teal-600 text-white shadow-md p-4 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-water text-2xl"></i>
+            <h1 class="text-xl font-bold tracking-wider">水路旅人 <span class="font-normal text-teal-200">| 情境劇本產生器</span></h1>
+        </div>
+        <div class="text-sm text-teal-100 flex items-center gap-2 font-medium">
+            <i class="fa-solid fa-school"></i> 高雄市大同國小資優班
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-white border-r border-slate-200 p-6 flex flex-col shrink-0 overflow-y-auto">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">創作流程</h2>
+            
+            <nav class="space-y-4 relative" id="step-nav">
+                <!-- Vertical Line -->
+                <div class="absolute left-4 top-4 bottom-4 w-0.5 bg-slate-100 -z-10"></div>
+
+                <button class="nav-btn w-full flex items-start gap-4 text-left group active" data-step="1">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm bg-teal-500 text-white shadow-md transition-colors step-icon">1</div>
+                    <div>
+                        <div class="font-bold text-slate-800 transition-colors step-title">第一階段</div>
+                        <div class="text-xs text-slate-500">奠定基礎與文史</div>
+                    </div>
+                </button>
+
+                <button class="nav-btn w-full flex items-start gap-4 text-left group opacity-50 cursor-not-allowed" data-step="2">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm transition-colors step-icon">2</div>
+                    <div>
+                        <div class="font-bold text-slate-500 transition-colors step-title">第二階段</div>
+                        <div class="text-xs text-slate-500">5W1H 劇情與衝突</div>
+                    </div>
+                </button>
+
+                <button class="nav-btn w-full flex items-start gap-4 text-left group opacity-50 cursor-not-allowed" data-step="3">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm transition-colors step-icon">3</div>
+                    <div>
+                        <div class="font-bold text-slate-500 transition-colors step-title">第三階段</div>
+                        <div class="text-xs text-slate-500">塑造角色與抉擇</div>
+                    </div>
+                </button>
+
+                <button class="nav-btn w-full flex items-start gap-4 text-left group opacity-50 cursor-not-allowed" data-step="4">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm transition-colors step-icon"><i class="fa-solid fa-file-export"></i></div>
+                    <div>
+                        <div class="font-bold text-slate-500 transition-colors step-title">產出劇本</div>
+                        <div class="text-xs text-slate-500">AI 擴寫與匯出</div>
+                    </div>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Form Area -->
+        <section class="flex-1 p-8 overflow-y-auto bg-slate-50 relative">
+            <div class="max-w-4xl mx-auto glass-panel shadow-xl rounded-2xl p-8 border border-slate-100">
+                
+                <!-- Step 1: 奠定基礎 -->
+                <div id="step-1" class="step-content active">
+                    <div class="mb-8 border-b-2 border-teal-500 inline-block pb-2">
+                        <h2 class="text-2xl font-bold text-slate-800"><i class="fa-solid fa-map-location-dot text-teal-500 mr-2"></i>第一階段：奠定基礎與文史探索</h2>
+                        <p class="text-slate-500 mt-1 text-sm">決定遊戲流域，吸收在地歷史知識，並確立玩家的逃脫目標。</p>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="flex gap-6">
+                            <!-- Left: Selectors -->
+                            <div class="flex-1 space-y-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">1. 選擇流域或文化區段 <span class="text-red-500">*</span></label>
+                                    <select id="input-location" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white" onchange="autoFillSuggestions()">
+                                        <option value="" disabled selected>請選擇一個區段...</option>
+                                        <option value="源頭及曹公圳水系 (九曲堂車站/三和瓦窯/高屏溪舊鐵橋/臺灣鳳梨工場)">源頭及曹公圳水系 (九曲堂/瓦窯/鐵橋/鳳梨工場)</option>
+                                        <option value="愛河上游 (八卦寮埤/金獅湖)">愛河上游 (八卦寮埤/金獅湖)</option>
+                                        <option value="愛河中游 (淺野水泥株式會社/中都唐榮磚窯廠)">愛河中游 (淺野水泥株式會社/中都唐榮磚窯廠)</option>
+                                        <option value="愛河下游 (哈瑪星車站/鼓山彩色島/鼓山渡船碼頭)">愛河下游 (哈瑪星車站/鼓山彩色島/鼓山渡船碼頭)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">2. 決定風格主題 <span class="text-red-500">*</span></label>
+                                    <select id="input-style" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white" onchange="updateDynamicGoal()">
+                                        <option value="" disabled selected>請先選擇流域或自行挑選風格...</option>
+                                        <optgroup label="📚 經典文史 (還原在地歷史)">
+                                            <option value="🌿 生態紀實風 (濕地、湖泊、自然守護)">🌿 生態紀實風 (濕地、湖泊、自然守護)</option>
+                                            <option value="🏛️ 時代考據風 (百年工藝、傳統瓦窯、歷史還原)">🏛️ 時代考據風 (百年工藝、傳統瓦窯、歷史還原)</option>
+                                            <option value="🏭 工業遺址風 (廢棄工廠、TR磚、水泥廠)">🏭 工業遺址風 (廢棄工廠、TR磚、水泥廠)</option>
+                                            <option value="⚓ 復古港都風 (大航海、鐵道運輸、繁華商貿)">⚓ 復古港都風 (大航海、鐵道運輸、繁華商貿)</option>
+                                        </optgroup>
+                                        <optgroup label="✨ 創意多元 (融合流行娛樂元素)">
+                                            <option value="🌆 賽博龐克風 (未來水都、科技變異、霓虹廢墟)">🌆 賽博龐克風 (未來水都、科技變異、霓虹廢墟)</option>
+                                            <option value="👻 懸疑驚悚風 (廢棄遺址、幽靈船、都市傳說)">👻 懸疑驚悚風 (廢棄遺址、幽靈船、都市傳說)</option>
+                                            <option value="🐉 奇幻神話風 (河神信仰、水底龍宮、古老咒語)">🐉 奇幻神話風 (河神信仰、水底龍宮、古老咒語)</option>
+                                            <option value="🕵️‍♂️ 推理偵探風 (歷史懸案、密碼信件、跨時空追兇)">🕵️‍♂️ 推理偵探風 (歷史懸案、密碼信件、跨時空追兇)</option>
+                                            <option value="💥 末日生存風 (極端氣候、資源枯竭、淹沒城市)">💥 末日生存風 (極端氣候、資源枯竭、淹沒城市)</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Right: Knowledge Base -->
+                            <div class="flex-1">
+                                <div id="knowledge-panel" class="h-full bg-slate-100 rounded-lg border border-slate-200 p-5 shadow-inner transition-colors duration-500 overflow-y-auto" style="max-height: 300px;">
+                                    <h3 class="font-bold text-teal-700 mb-3 border-b border-teal-200 pb-2 flex items-center gap-2 sticky top-0 bg-slate-100 z-10">
+                                        <i class="fa-solid fa-lightbulb"></i> 歷史知識錦囊
+                                    </h3>
+                                    <div id="knowledge-content" class="text-sm text-slate-600 space-y-3">
+                                        <p class="text-slate-400 italic text-center mt-10">請先選擇左側的「流域或文化區段」，這裡將會顯示該區域的關鍵歷史知識點，幫助你設計謎題！</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 任務目標雙模式切換 -->
+                        <div class="pt-4 border-t border-slate-100">
+                            <div class="flex justify-between items-end mb-3">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700">3. 確立單一、直覺的目標 <span class="text-red-500">*</span></label>
+                                    <p class="text-xs text-slate-500 mt-1">請結合上方的「知識錦囊」，設定玩家的最終任務。</p>
+                                </div>
+                                <div class="bg-slate-200 p-1 rounded-lg inline-flex">
+                                    <button id="btn-preset-goal" onclick="toggleGoalMode('preset')" class="px-4 py-1.5 rounded-md text-xs font-bold bg-white text-teal-700 shadow transition-all">📖 動態帶入預設範本</button>
+                                    <button id="btn-custom-goal" onclick="toggleGoalMode('custom')" class="px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all">✨ 自創目標 (鷹架)</button>
+                                </div>
+                            </div>
+                            <textarea id="input-goal" rows="4" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 leading-relaxed font-medium text-teal-900 bg-teal-50/30 transition-all" placeholder="請先選擇上方的流域以獲取範本，或切換為「自創目標」使用鷹架。"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end">
+                        <button onclick="goToStep(2)" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-colors flex items-center gap-2">
+                            下一步 <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: 注入劇情 (5W1H) -->
+                <div id="step-2" class="step-content">
+                    <div class="mb-8 border-b-2 border-orange-500 inline-block pb-2">
+                        <h2 class="text-2xl font-bold text-slate-800"><i class="fa-solid fa-bolt text-orange-500 mr-2"></i>第二階段：5W1H 危機建構面板</h2>
+                        <p class="text-slate-500 mt-1 text-sm">透過 5W1H 架構，建立具備邏輯深度的時間阻隔與災難代價。</p>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-orange-50 p-4 rounded-lg border border-orange-100 flex gap-4 items-start mb-4">
+                            <i class="fa-solid fa-sitemap text-orange-400 text-xl mt-1"></i>
+                            <div class="text-sm text-slate-700">
+                                <strong>設計提示：</strong> 一個好的密室危機不能只靠炸彈。請思考這場危機的<strong>起因 (Why)</strong>、發生在<strong>哪裡 (Where)</strong>，以及如果失敗了，<strong>誰 (Who)</strong> 會受到影響？
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <!-- 5W1H 雙模式切換 -->
+                            <div class="flex justify-between items-end mb-4 border-b border-orange-100 pb-3">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700">確立 5W1H 危機細節 <span class="text-red-500">*</span></label>
+                                    <p class="text-xs text-slate-500 mt-1">帶入歷史預設危機，或使用鷹架自行發想。</p>
+                                </div>
+                                <div class="bg-slate-200 p-1 rounded-lg inline-flex">
+                                    <button id="btn-preset-crisis" onclick="toggleCrisisMode('preset')" class="px-4 py-1.5 rounded-md text-xs font-bold bg-white text-orange-700 shadow transition-all">📖 帶入預設範本</button>
+                                    <button id="btn-custom-crisis" onclick="toggleCrisisMode('custom')" class="px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all">✨ 自創危機 (鷹架)</button>
+                                </div>
+                            </div>
+
+                            <!-- 5W1H Grid -->
+                            <div class="grid grid-cols-2 gap-5">
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fa-regular fa-clock text-orange-500 mr-1"></i> [When] 倒數限制 <span class="text-red-500">*</span></label>
+                                    <div class="flex items-center">
+                                        <input type="number" id="input-when" class="w-full p-2 border border-slate-300 rounded-l-lg focus:ring-2 focus:ring-orange-500 transition-all bg-orange-50/30" placeholder="例如：60" value="60">
+                                        <span class="bg-slate-200 text-slate-600 p-2 border border-l-0 border-slate-300 rounded-r-lg font-bold">分鐘</span>
+                                    </div>
+                                </div>
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-location-crosshairs text-orange-500 mr-1"></i> [Where] 發生場域 <span class="text-red-500">*</span></label>
+                                    <input type="text" id="input-where" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition-all bg-orange-50/30" placeholder="例如：百年八卦窯的最深處">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-circle-question text-orange-500 mr-1"></i> [Why] 危機起因 <span class="text-red-500">*</span></label>
+                                    <input type="text" id="input-why" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition-all bg-orange-50/30" placeholder="例如：賽洛瑪等級的超級颱風破壞了排煙系統">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-meteor text-orange-500 mr-1"></i> [What] 觸發事件 <span class="text-red-500">*</span></label>
+                                    <div class="flex items-center">
+                                        <span class="text-slate-500 text-sm mr-2 shrink-0">當時間歸零時，將會...</span>
+                                        <input type="text" id="input-what" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition-all bg-orange-50/30" placeholder="例如：引發海水倒灌吞沒魚市場">
+                                    </div>
+                                </div>
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-users-rays text-orange-500 mr-1"></i> [Who] 波及對象 <span class="text-red-500">*</span></label>
+                                    <input type="text" id="input-who" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition-all bg-orange-50/30" placeholder="例如：無辜的哈瑪星漁民">
+                                </div>
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-skull-crossbones text-orange-500 mr-1"></i> [How] 失敗代價 <span class="text-red-500">*</span></label>
+                                    <input type="text" id="input-how" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition-all bg-orange-50/30" placeholder="例如：歷史珍貴的TR磚工藝永遠失傳">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-between">
+                        <button onclick="goToStep(1)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-lg transition-colors">
+                            <i class="fa-solid fa-arrow-left mr-2"></i> 上一步
+                        </button>
+                        <button onclick="goToStep(3)" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-colors flex items-center gap-2">
+                            下一步 <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: 塑造角色 -->
+                <div id="step-3" class="step-content">
+                    <div class="mb-8 border-b-2 border-indigo-500 inline-block pb-2">
+                        <h2 class="text-2xl font-bold text-slate-800"><i class="fa-solid fa-user-group text-indigo-500 mr-2"></i>第三階段：塑造角色與抉擇</h2>
+                        <p class="text-slate-500 mt-1 text-sm">建立對立角色，並設定隱藏的秘密與迫使玩家做出選擇的決策點。</p>
+                    </div>
+
+                    <div class="space-y-6">
+                        
+                        <div class="pt-2">
+                            <div class="flex justify-between items-end mb-4 border-b border-indigo-100 pb-3">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700">確立角色與兩難抉擇 <span class="text-red-500">*</span></label>
+                                    <p class="text-xs text-slate-500 mt-1">帶入歷史預設角色，或使用鷹架自創專屬角色與隱藏秘密。</p>
+                                </div>
+                                <div class="bg-slate-200 p-1 rounded-lg inline-flex">
+                                    <button id="btn-preset-char" onclick="toggleCharMode('preset')" class="px-4 py-1.5 rounded-md text-xs font-bold bg-white text-indigo-700 shadow transition-all">📖 帶入預設範本</button>
+                                    <button id="btn-custom-char" onclick="toggleCharMode('custom')" class="px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all">✨ 自創角色 (鷹架)</button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-6">
+                                <!-- 正方角色 A -->
+                                <div class="bg-blue-50 p-5 rounded-xl border border-blue-200 shadow-sm relative transition-all" id="panel-bg-a">
+                                    <div class="absolute -top-3 -left-3 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold shadow">A</div>
+                                    <h3 class="font-bold text-blue-800 mb-3 flex items-center gap-2 border-b border-blue-200 pb-2"><i class="fa-solid fa-shield-halved"></i> 協助者 (守護方)</h3>
+                                    
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-xs text-blue-700 font-bold mb-1">角色稱呼</label>
+                                            <input type="text" id="input-char-a-name" class="w-full p-2 border border-blue-300 rounded focus:ring-1 focus:ring-blue-500 transition-all bg-blue-50/30" placeholder="例如：第四代老窯主">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-blue-700 font-bold mb-1">核心信念 / 苦衷</label>
+                                            <textarea id="input-char-a-desc" rows="2" class="w-full p-2 border border-blue-300 rounded focus:ring-1 focus:ring-blue-500 transition-all bg-blue-50/30" placeholder="他為何要幫助玩家？(例如：堅持傳統古法)"></textarea>
+                                        </div>
+                                        <div class="custom-char-panel hidden border-t border-blue-200 pt-3" id="panel-char-a-custom">
+                                            <div>
+                                                <label class="block text-xs text-blue-700 font-bold mb-1"><i class="fa-solid fa-user-secret mr-1"></i> 隱藏秘密 / 致命弱點</label>
+                                                <textarea id="input-char-a-secret" rows="2" class="w-full p-2 border border-blue-300 rounded focus:ring-1 focus:ring-blue-500 bg-white" placeholder="讓角色更立體的弱點？"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 反方角色 B -->
+                                <div class="bg-red-50 p-5 rounded-xl border border-red-200 shadow-sm relative transition-all" id="panel-bg-b">
+                                    <div class="absolute -top-3 -left-3 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center font-bold shadow">B</div>
+                                    <h3 class="font-bold text-red-800 mb-3 flex items-center gap-2 border-b border-red-200 pb-2"><i class="fa-solid fa-user-ninja"></i> 阻礙者 (破壞方)</h3>
+                                    
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-xs text-red-700 font-bold mb-1">角色稱呼</label>
+                                            <input type="text" id="input-char-b-name" class="w-full p-2 border border-red-300 rounded focus:ring-1 focus:ring-red-500 transition-all bg-red-50/30" placeholder="例如：現代化建材商">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-red-700 font-bold mb-1">行動動機 / 利益</label>
+                                            <textarea id="input-char-b-desc" rows="2" class="w-full p-2 border border-red-300 rounded focus:ring-1 focus:ring-red-500 transition-all bg-red-50/30" placeholder="他為何要阻礙玩家？(例如：企圖拆除老窯廠蓋大樓)"></textarea>
+                                        </div>
+                                        <div class="custom-char-panel hidden border-t border-red-200 pt-3" id="panel-char-b-custom">
+                                            <div>
+                                                <label class="block text-xs text-red-700 font-bold mb-1"><i class="fa-solid fa-mask mr-1"></i> 隱藏秘密 / 致命弱點</label>
+                                                <textarea id="input-char-b-secret" rows="2" class="w-full p-2 border border-red-300 rounded focus:ring-1 focus:ring-red-500 bg-white" placeholder="反派也有苦衷？"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-50 p-5 rounded-xl border border-indigo-200 mt-6">
+                            <label class="block text-sm font-bold text-indigo-900 mb-2"><i class="fa-solid fa-scale-unbalanced text-indigo-600 mr-2"></i>設計終極抉擇點 (人性與道德兩難) <span class="text-red-500">*</span></label>
+                            <p class="text-xs text-indigo-700 mb-3">在遊戲最後，玩家獲得了關鍵物品，但必須在兩派的價值觀中做出艱難的選擇。</p>
+                            <textarea id="input-choice" rows="3" class="w-full p-3 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all bg-indigo-50/30" placeholder="玩家最終在陰乾室找到『百年磚模』。必須選擇交給老窯主【保留歷史建築】，或是交給建材商【獲得高額利潤，但百年窯廠被拆除】。"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-between">
+                        <button onclick="goToStep(2)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-lg transition-colors">
+                            <i class="fa-solid fa-arrow-left mr-2"></i> 上一步
+                        </button>
+                        <button onclick="generateScript()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-colors flex items-center gap-2 transform hover:scale-105">
+                            完成基礎設定 <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 4: 產出結果 -->
+                <div id="step-4" class="step-content">
+                    <div class="flex flex-col gap-4 mb-6">
+                        <div>
+                            <h2 class="text-3xl font-black text-slate-800 tracking-tight">📜 您的密室劇本企劃</h2>
+                            <p class="text-sm text-slate-500 mt-1">您可以直接匯出大綱，或點擊「AI 智能擴寫」獲得充滿畫面感的完整劇情！</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 justify-start items-center p-3 bg-slate-100 rounded-lg border border-slate-200 shadow-sm">
+                            <button onclick="enhanceScriptWithAI()" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 text-sm transition-all transform hover:scale-105">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> AI 智能擴寫
+                            </button>
+                            <div class="w-px h-6 bg-slate-300 mx-2"></div>
+                            <button onclick="copyScript()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded shadow flex items-center gap-2 text-sm transition-colors">
+                                <i class="fa-regular fa-copy"></i> 複製劇本
+                            </button>
+                            <button onclick="exportWord()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded shadow flex items-center gap-2 text-sm transition-colors">
+                                <i class="fa-solid fa-file-word"></i> 匯出 Word
+                            </button>
+                            <button onclick="exportPDF()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded shadow flex items-center gap-2 text-sm transition-colors">
+                                <i class="fa-solid fa-file-pdf"></i> 匯出 PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Output Document -->
+                    <div id="script-output" class="bg-white border-2 border-slate-200 rounded-xl p-8 prose max-w-none text-slate-700 shadow-inner min-h-[400px]">
+                        <!-- Content will be injected here -->
+                    </div>
+
+                    <div class="mt-8 flex justify-center">
+                        <button onclick="goToStep(1)" class="text-teal-600 hover:text-teal-800 font-bold underline transition-colors">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> 重新設計一份
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
+        <i class="fa-solid fa-circle-check text-green-400"></i>
+        <span id="toast-msg">處理中...</span>
+    </div>
+
+    <script>
+        // ==============================
+        // 系統全域變數宣告
+        // ==============================
+        let currentStep = 1;
+        let isCustomGoalMode = false;
+        let isCustomCrisisMode = false; 
+        let isCustomCharMode = false;    
+        let globalScriptData = null;
+
+        // 結合文史與角色設定的預設資料
+        const suggestions = {
+            "源頭及曹公圳水系 (九曲堂車站/三和瓦窯/高屏溪舊鐵橋/臺灣鳳梨工場)": {
+                defaultStyle: "🏛️ 時代考據風 (百年工藝、傳統瓦窯、歷史還原)",
+                knowledge: [
+                    "📍【愛河概述：從源頭出發】愛河全長約12公里, 古稱「打狗川」。跟隨沈醫師 BMW (Bus, Metro, Walk) 腳步, 從大同國小出發展開文史溯源之旅。",
+                    "📍【九曲堂車站與產業鐵路】昔日是大樹區物產(鳳梨、磚瓦)輸出至高雄港的重要樞紐, 保存了珍貴的引水設施與磚造水塔。",
+                    "📍【臺灣鳳梨工場】全世界碩果僅存的泰芳鳳梨工廠遺址, 見證台灣鳳梨罐頭王國的輝煌, 保存了大樹區獨特的產業記憶。",
+                    "📍【百年三和瓦窯與舊鐵橋】1918年創立, 堅持『選土、陰乾、入窯高溫燒製』等繁複古法。高屏溪舊鐵橋曾是亞洲最長鐵橋, 守護著高雄的命脈。"
+                ],
+                when: "60",
+                where: "高屏溪舊鐵橋下的隱藏隧道與百年八卦窯深處",
+                why: "賽洛瑪等級的強烈颱風破壞了排煙系統, 並導致高屏溪水位暴漲",
+                what: "窯爐內部溫度降至臨界點, 百年傳承的窯火將徹底熄滅, 舊鐵橋結構也會受損",
+                who: "堅守傳統工法的第四代老窯主與依賴鐵路運輸的當地果農",
+                how: "大樹區的瓦窯與鳳梨罐頭產業記憶永遠失傳, 百年歷史建築也將崩塌",
+                charAName: "第四代老窯主",
+                charADesc: "面對人力短缺與市場萎縮, 依然堅持傳統工法, 希望將老窯廠與鳳梨工場轉型為文創基地。",
+                charASecret: "因為長年吸入粉塵, 他的肺部已經嚴重纖維化。他隱瞞病情, 只希望能撐到傳人接手的那一天。",
+                charBName: "現代化建材與土地開發商",
+                charBDesc: "認為傳統產業不符經濟效益, 企圖併購九曲堂至舊鐵橋一帶的土地, 改建為大型廠房。",
+                charBSecret: "開發商其實是老窯主的親弟弟, 當年因為受不了燒窯的辛苦與低薪而逃跑, 併購只是為了向哥哥證明自己的選擇。",
+                choice: "玩家最後在陰乾室找到『百年磚模』與『地契』。抉擇點：將地契交給老窯主【成功轉型文創園區, 保留歷史】, 或是賣給建材商【獲得高額利潤, 但百年古蹟將被完全拆除】。"
+            },
+            "愛河上游 (八卦寮埤/金獅湖)": {
+                defaultStyle: "🌿 生態紀實風 (濕地、湖泊、自然守護)",
+                knowledge: [
+                    "📍【愛河概述：上游水脈】愛河上游曾是灌溉命脈。沈政璋醫師提倡以 BMW 綠色運具漫遊, 探訪這條從「發臭水溝」蛻變成綠意廊道的歷史。",
+                    "📍【曹公圳與八卦寮埤】清代曹謹開鑿的灌溉系統, 孕育了豐富的濕地生態系。昔日的埤塘與菱角田是高雄最早的農業搖籃。",
+                    "📍【金獅湖與宗教地景】原名大埤、覆鼎金埤, 是愛河上游重要源頭。湖畔道德院及保安宮融合了自然水岸與傳統廟宇文化。",
+                    "📍【水文治理與轉變】見證愛河從早期的「明溝排洪」到現代結合滯洪池與生態保育的轉型歷程。"
+                ],
+                when: "45",
+                where: "金獅湖畔的抽水站與八卦寮地下水門",
+                why: "異常的極端旱災加上財團為了蓋廠而私自截斷愛河上游的水源",
+                what: "最後的備用水槽見底, 八卦寮菱角田與金獅湖將徹底枯竭乾裂",
+                who: "依賴埤塘生存的農民、湖畔居民與當地特有種水鳥",
+                how: "豐富的生態系將被建商夷為平地, 代代相傳的宗教與農耕文化永久消失",
+                charAName: "生態導覽員 沈醫師",
+                charADesc: "堅持用BMW綠色運具記錄愛河上游的點滴, 認為土地與金獅湖有靈, 誓死保護最後的濕地。",
+                charASecret: "他其實在追尋一份當年參與愛河整治工程的長輩留下的『隱藏水脈地圖』, 希望能讓愛河上游重現百年前的清澈。",
+                charBName: "科技農業財團CEO",
+                charBDesc: "認為傳統灌溉沒效率, 想買下土地蓋高科技植物工廠, 切斷自然水路。",
+                charBSecret: "他的植物工廠其實是個幌子, 地下正在偷偷抽取深層地下水販售, 面臨龐大的債務壓力。",
+                choice: "玩家最後取得『總水門把手』與『水脈圖』。抉擇點：必須選擇裝在【古圳】讓水流入金獅湖與濕地（生態勝利）, 或是裝在【財團管線】獲得豐厚獎金但毀滅濕地（經濟勝利）。"
+            },
+            "愛河中游 (淺野水泥株式會社/中都唐榮磚窯廠)": {
+                defaultStyle: "🏭 工業遺址風 (廢棄工廠、TR磚、水泥廠)",
+                knowledge: [
+                    "📍【愛河概述：中游工業走廊】愛河在日治時期改稱「高雄川」。沈醫師 BMW 漫遊引導大眾看見愛河如何從一條「工業大溝」轉身為文史寶庫。",
+                    "📍【中都唐榮磚窯廠】1899年創立, 生產頂級『T.R磚』(Taiwan Renga)。擁有『霍夫曼窯』與『倒焰窯』等百年燒製智慧, 是高雄工業起飛的見證。",
+                    "📍【淺野水泥株式會社】1918年於壽山下建廠, 代表現代建築之母。開鑿「鼓山運河」運送紅土, 並建「淺野線鐵路」, 形成了獨特的水陸鐵路交織地景。",
+                    "📍【BMW 漫遊視景】從大同國小出發, 經前金捷運、哈瑪星車站抵達鼓山站, 感受捷運、輕軌與台鐵交織下的舊工業遺址魅力。"
+                ],
+                when: "50",
+                where: "淺野水泥紅磚石灰窯的地下坑道與唐榮倒焰窯內",
+                why: "都市更新大隊無預警提早啟動了重型機具進行怪手拆除作業",
+                what: "整座百年工業遺址（石灰窯與八卦窯）將被徹底剷平為平地",
+                who: "致力於保存高雄工業遺址與水路歷史的文史工作者",
+                how: "高雄從工業起飛的珍貴記憶被抹除, 後代再也見不到TR磚與水泥燒製的歷史智慧",
+                charAName: "文史工作者 沈醫師",
+                charADesc: "熱愛高雄土地的醫師, 用鏡頭與BMW記錄愛河, 希望能保留百年窯廠與石灰窯作為城市記憶。",
+                charASecret: "他的祖父當年就在這座窯廠發生工安意外過世, 他保存古蹟不僅是為了城市, 更是為了找回祖父當年的遺物。",
+                charBName: "現代開發財團",
+                charBDesc: "認為舊工業區阻礙都市發展, 急欲拆除遺跡並填平鼓山運河以興建大型商業豪宅。",
+                charBSecret: "財團內部資金鏈已經斷裂, 如果這片豪宅區無法如期動工, 公司將會面臨破產危機, 因此他必須不擇手段。",
+                choice: "玩家最終在隧道窯深處找到關鍵的『淺野線鐵路地契』。抉擇點：將地契交給沈醫師【成功劃定古蹟保護區, 保留歷史】, 或是交給財團【換取高額獎金, 但百年工業遺址將永遠消失】。"
+            },
+            "愛河下游 (哈瑪星車站/鼓山彩色島/鼓山渡船碼頭)": {
+                defaultStyle: "⚓ 復古港都風 (大航海、鐵道運輸、繁華商貿)",
+                knowledge: [
+                    "📍【愛河概述：下游入海口】愛河之名源於1948年風災後「愛河租船所」招牌被吹落只剩「愛河」二字。沈醫師 BMW 漫遊引領探訪這段浪漫又豐富的下游史。",
+                    "📍【哈瑪星與濱線歷史】高雄現代化的起點! 哈瑪星源於日語「濱線(はません)」。昔日哈瑪星車站是海陸聯運的繁華心臟。",
+                    "📍【鼓山彩色島與透明魚市】鼓山魚市場以『透明盒子』設計營造明亮感; 彩色島則是漁民為了夜間辨識家門漆成的鮮豔聚落, 充滿浪漫氣息。",
+                    "📍【旗津渡輪與交通變遷】從人力舢舨(如：充利進號)到電動渡輪, 見證了打狗港的百年興衰, 仍保留著機車可上船的在地特色規定。"
+                ],
+                when: "60",
+                where: "鼓山渡船碼頭旁與哈瑪星車站的舊鐵道調車場",
+                why: "氣候變遷導致高雄港外海形成百年罕見的超級暴潮",
+                what: "洶湧的海水將倒灌吞沒整個碼頭、彩色島與『透明盒子』魚市場",
+                who: "居住在彩色島的漁民, 遊客以及保存濱線歷史的老導覽員",
+                how: "哈瑪星從鐵道樞紐到漁業重鎮的珍貴文獻與彩色島漁民記憶, 將永遠沉入海底",
+                charAName: "老舢舨船長",
+                charADesc: "經歷過人力舢舨年代, 代表傳統與傳承, 希望能保留百年渡輪的歷史與哈瑪星的回憶。",
+                charASecret: "老船長的眼睛已經接近失明, 他其實根本看不見海圖, 完全是憑藉著六十年來的身體記憶在駕駛渡輪。",
+                charBName: "現代化港口開發商",
+                charBDesc: "認為舊車站和渡輪碼頭已經落後, 急欲填平舊航道, 改建成跨海大橋與高樓大廈。",
+                charBSecret: "開發商其實非常畏懼海洋。小時候曾在舊港口溺水差點喪命, 因此他懷意識裡想要把這裡全部用水泥填平。",
+                choice: "玩家最終在渡輪上找到關鍵的『濱線地契』。抉擇點：必須選擇交給老船長【保留哈瑪星百年文史】, 或是交給開發商【將舊港區全面改建為現代化大樓】。"
+            }
+        };
+
+        function getGoalForStyleAndLocation(loc, styleStr) {
+            let styleKey = "考據"; 
+            if (styleStr.includes("生態")) styleKey = "生態";
+            else if (styleStr.includes("考據")) styleKey = "考據";
+            else if (styleStr.includes("工業")) styleKey = "工業";
+            else if (styleStr.includes("港都")) styleKey = "港都";
+            else if (styleStr.includes("賽博")) styleKey = "賽博";
+            else if (styleStr.includes("驚悚")) styleKey = "驚悚";
+            else if (styleStr.includes("神話")) styleKey = "神話";
+            else if (styleStr.includes("推理")) styleKey = "推理";
+            else if (styleStr.includes("末日")) styleKey = "末日";
+
+            const matrix = {
+                "源頭及曹公圳水系 (九曲堂車站/三和瓦窯/高屏溪舊鐵橋/臺灣鳳梨工場)": {
+                    "生態": "追隨沈醫師BMW漫遊路線, 修復舊鐵橋下的濕地水道, 重新引導純淨高屏溪水灌溉大樹鳳梨田。",
+                    "考據": "考究日治時期九曲堂車站的運輸記錄, 尋找隱藏在『臺灣鳳梨工場』舊煙囪中的百年磚模機密。",
+                    "工業": "在廢棄的鳳梨罐頭生產線中, 啟動古老的蒸汽鍋爐, 阻止非法傾倒的工業廢水污染曹公圳源頭。",
+                    "港都": "復原九曲堂車站的貨運機關, 將最後一班載滿TR紅磚與金鑽鳳梨罐頭的火車送往高雄港外銷。",
+                    "賽博": "在被AI監控的三和瓦窯內, 駭入火候控制晶片, 奪回傳統『窯燒1000度』的數位控制權。",
+                    "驚悚": "雷雨之夜登上高屏溪舊鐵橋, 聽著消失的火車汽笛聲, 找尋當年修橋工程師遺留的古老懷錶。",
+                    "神話": "在鳳梨田中祭祀『土川神』, 取得三和瓦窯產出的五行法磚, 加固高屏溪舊鐵橋的封印機關。",
+                    "推理": "根據九曲堂車站遺留的火車票根與鳳梨工場的生產日誌, 揭開當年偷運瓦窯黃金的懸案真相。",
+                    "末日": "在資源枯竭的荒野, 利用三和瓦窯最後的一線窯火製作出濾水磚, 並透過舊鐵橋逃往安全的屏東平原。"
+                },
+                "愛河上游 (八卦寮埤/金獅湖)": {
+                    "生態": "潛入地下水門控制室, 跟著沈醫師的步伐破解密碼, 解救即將因缺水而枯死的水鳥生態。",
+                    "考據": "考究清代曹謹開鑿水圳的古籍, 找出隱藏在金獅湖畔保安宮內的古代治水機關與舊水脈。",
+                    "工業": "潛入微笑公園地下的舊排洪暗渠, 找出閥門並關閉正準備排放至金獅湖的毒水污染源。",
+                    "港都": "尋找早期藉由水圳運送物資的小船航線, 打通連接金獅湖與愛河主流的水路樞紐。",
+                    "賽博": "在霓虹閃爍的仿生菱角田中, 駭入財團主機奪回『愛河之心環境生態AI控制權』。",
+                    "驚悚": "逃離佈滿死魚的發臭埤塘, 拼湊當年因護水而溺斃的農民遺物以平息怨念。",
+                    "神話": "破解金獅湖畔的風水陣法, 喚醒沉睡在湖底的『獅神』, 利用圖騰法器淨化被詛咒的水域。",
+                    "推理": "拼湊沈醫師留下的水文日誌與泥地腳印, 找出是誰在暗中截斷了曹公圳水源。",
+                    "末日": "在超級旱災席捲的荒土中, 尋找八卦寮與金獅湖之間最後一處未被蒸發的純淨地下水井。"
+                },
+                "愛河中游 (淺野水泥株式會社/中都唐榮磚窯廠)": {
+                    "生態": "跟隨BMW路線深入滿是水泥粉塵的廢棄廠區, 啟動地下淨水系統, 讓綠意重回鼓山運河。",
+                    "考據": "利用『TR磚』的防火特性解開倒焰窯的火路迷宮, 尋找啟動『淺野線鐵路』的百年機關。",
+                    "工業": "深入淺野水泥廠的地下石灰礦坑, 重新啟動三座紅磚石灰窯的巨型齒輪。",
+                    "港都": "找回當年經由鼓山運河運送紅土的『水路通行證』, 打通連接淺野水泥與高雄港的命脈。",
+                    "賽博": "潛入被財團改造為『數據處理中心』的中都磚窯廠, 將意識上傳以癱瘓伺服器冷卻系統。",
+                    "驚悚": "在半夜傳出機器運轉聲的廢棄水泥廠, 跟著地上的石灰腳印, 解開當年工安意外的恐怖真相。",
+                    "神話": "取得壽山石灰岩中的『地脈之心』, 將其放入八卦窯中煉化, 封印從鼓山運河底爬出的淤泥巨獸。",
+                    "推理": "分析百年TR磚上的神秘刻痕與淺野線鐵路的班次表, 找出偷運黃金的真實路線。",
+                    "末日": "在建築物崩塌的末日都市, 潛入最後的百年倒焰窯尋找能過濾核輻射的特製濾網。"
+                },
+                "愛河下游 (哈瑪星車站/鼓山彩色島/鼓山渡船碼頭)": {
+                    "生態": "清除卡在鼓山渡船碼頭下方的巨型海洋垃圾, 解救受困的保育類海龜並恢復航道通暢。",
+                    "考據": "跟隨沈醫師BMW腳步, 解開哈瑪星舊鐵道的密碼, 找到啟動『充利進號』百年木造舢舨船的遺失航海圖。",
+                    "工業": "在廢棄的哈瑪星車站調車場, 將生鏽的轉轍器歸位,讓最後一班載滿歷史文獻的火車駛離。",
+                    "港都": "趕在跨國商船拔錨前, 在鼓山渡船碼頭旁找出被走私客藏匿的『打狗開港紀念金幣』。",
+                    "賽博": "在被霓虹光包圍的『數位彩色島』, 駭入自動渡輪系統盜取前往深海區的電子船票。",
+                    "驚悚": "深夜登上無人駕駛卻自動往返的旗津渡輪, 解開船艙鏡子裡不斷出現的老船長怨靈之謎。",
+                    "神話": "在月全食之夜, 於哈瑪星濱線點燃引路燈, 引導迷失在迷霧海域的幽靈商船平安歸港。",
+                    "推理": "根據彩色島上房屋油漆顏色的暗號排列, 破解怪盜遺留在渡船碼頭候船室的密碼鎖。",
+                    "末日": "在海水即將淹沒全城的最後倒數中, 修好唯一一艘能發動的電動渡輪, 帶領倖存者逃向旗津高地。"
+                }
+            };
+
+            if (matrix[loc] && matrix[loc][styleKey]) {
+                return matrix[loc][styleKey];
+            }
+            return "";
+        }
+
+        function updateDynamicGoal() {
+            if (isCustomGoalMode) return; 
+            const loc = document.getElementById('input-location').value;
+            const styleStr = document.getElementById('input-style').value;
+            const inputGoal = document.getElementById('input-goal');
+            if (!loc || !styleStr) return;
+            const newGoal = getGoalForStyleAndLocation(loc, styleStr);
+            if (newGoal) {
+                inputGoal.value = newGoal;
+                inputGoal.classList.add('bg-teal-50/30'); 
+            }
+        }
+
+        function toggleGoalMode(mode) {
+            const btnPreset = document.getElementById('btn-preset-goal');
+            const btnCustom = document.getElementById('btn-custom-goal');
+            const inputGoal = document.getElementById('input-goal');
+            if (mode === 'custom') {
+                isCustomGoalMode = true;
+                btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-teal-700 shadow transition-all";
+                btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
+                inputGoal.value = "【行動】（請填入：尋找 / 修復 / 啟動 / 駭入 / 解開...）\n\n【關鍵物】（請填入與背景相關的物品, 例如：金鑽鳳梨罐頭 / TR磚 / 水脈圖...）\n\n【最終目的】（請填入逃脫或拯救的結果...）";
+                inputGoal.classList.remove('bg-teal-50/30');
+            } else {
+                isCustomGoalMode = false;
+                btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-teal-700 shadow transition-all";
+                btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
+                updateDynamicGoal();
+            }
+        }
+
+        function toggleCrisisMode(mode) {
+            const btnPreset = document.getElementById('btn-preset-crisis');
+            const btnCustom = document.getElementById('btn-custom-crisis');
+            const loc = document.getElementById('input-location').value;
+            const inputs = ['input-when', 'input-where', 'input-why', 'input-what', 'input-who', 'input-how'];
+            if (mode === 'custom') {
+                isCustomCrisisMode = true;
+                btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-orange-700 shadow transition-all";
+                btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
+                inputs.forEach(id => { document.getElementById(id).value = ''; document.getElementById(id).classList.remove('bg-orange-50/30'); });
+            } else {
+                isCustomCrisisMode = false;
+                btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-orange-700 shadow transition-all";
+                btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
+                if (suggestions[loc]) {
+                    document.getElementById('input-when').value = suggestions[loc].when;
+                    document.getElementById('input-where').value = suggestions[loc].where;
+                    document.getElementById('input-why').value = suggestions[loc].why;
+                    document.getElementById('input-what').value = suggestions[loc].what;
+                    document.getElementById('input-who').value = suggestions[loc].who;
+                    document.getElementById('input-how').value = suggestions[loc].how;
+                    inputs.forEach(id => document.getElementById(id).classList.add('bg-orange-50/30'));
+                }
+            }
+        }
+
+        function toggleCharMode(mode) {
+            const btnPreset = document.getElementById('btn-preset-char');
+            const btnCustom = document.getElementById('btn-custom-char');
+            const customPanels = document.querySelectorAll('.custom-char-panel');
+            const loc = document.getElementById('input-location').value;
+            if (mode === 'custom') {
+                isCustomCharMode = true;
+                btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-indigo-700 shadow transition-all";
+                btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
+                customPanels.forEach(p => { p.classList.remove('hidden'); p.classList.add('visible'); });
+                document.getElementById('input-char-a-name').value = "【角色稱呼】";
+                document.getElementById('input-char-a-desc').value = "【堅持的理由】...\n【面臨的困難】...";
+                document.getElementById('input-char-a-secret').value = "【不為人知的秘密】...";
+                document.getElementById('input-char-b-name').value = "【角色稱呼】";
+                document.getElementById('input-char-b-desc').value = "【阻礙的原因】...\n【背後的利益】...";
+                document.getElementById('input-char-b-secret').value = "【真正的弱點】...";
+                document.getElementById('input-choice').value = "【情境】玩家獲得了...\n【選項一】交給A會...\n【選項二】交給B會...";
+                ['input-char-a-name','input-char-a-desc','input-char-b-name','input-char-b-desc','input-choice'].forEach(id => document.getElementById(id).classList.remove('bg-blue-50/30', 'bg-red-50/30', 'bg-indigo-50/30'));
+            } else {
+                isCustomCharMode = false;
+                btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-indigo-700 shadow transition-all";
+                btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
+                customPanels.forEach(p => { p.classList.remove('visible'); p.classList.add('hidden'); });
+                if (suggestions[loc]) {
+                    document.getElementById('input-char-a-name').value = suggestions[loc].charAName;
+                    document.getElementById('input-char-a-desc').value = suggestions[loc].charADesc;
+                    document.getElementById('input-char-a-secret').value = suggestions[loc].charASecret;
+                    document.getElementById('input-char-b-name').value = suggestions[loc].charBName;
+                    document.getElementById('input-char-b-desc').value = suggestions[loc].charBDesc;
+                    document.getElementById('input-char-b-secret').value = suggestions[loc].charBSecret;
+                    document.getElementById('input-choice').value = suggestions[loc].choice;
+                    ['input-char-a-name','input-char-a-desc'].forEach(id => document.getElementById(id).classList.add('bg-blue-50/30'));
+                    ['input-char-b-name','input-char-b-desc'].forEach(id => document.getElementById(id).classList.add('bg-red-50/30'));
+                    document.getElementById('input-choice').classList.add('bg-indigo-50/30');
+                }
+            }
+        }
+
+        function updateUI() {
+            document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step-${currentStep}`).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach((btn, index) => {
+                const stepNum = index + 1;
+                const icon = btn.querySelector('.step-icon');
+                const title = btn.querySelector('.step-title');
+                if (stepNum === currentStep) {
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    const colors = ['bg-teal-500', 'bg-orange-500', 'bg-indigo-500', 'bg-slate-800'];
+                    icon.className = `w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-md transition-colors step-icon ${colors[stepNum-1]}`;
+                    title.classList.add('text-slate-800'); title.classList.remove('text-slate-500');
+                } else if (stepNum < currentStep) {
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    icon.className = `w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm bg-green-100 text-green-600 transition-colors step-icon`;
+                    icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+                    title.classList.remove('text-slate-800'); title.classList.add('text-slate-600');
+                } else {
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    icon.className = `w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm transition-colors step-icon`;
+                    icon.innerHTML = stepNum === 4 ? '<i class="fa-solid fa-file-export"></i>' : stepNum;
+                    title.classList.remove('text-slate-800'); title.classList.add('text-slate-500');
+                }
+            });
+        }
+
+        function goToStep(step) {
+            if(currentStep === 1 && step === 2) {
+                if(!document.getElementById('input-location').value || !document.getElementById('input-goal').value || !document.getElementById('input-style').value) {
+                    showToast("請填寫完第一階段的必填欄位！", true); return;
+                }
+            }
+            if(currentStep === 2 && step === 3) {
+                const requiredIds = ['input-when', 'input-where', 'input-why', 'input-what', 'input-who', 'input-how'];
+                let isValid = true;
+                requiredIds.forEach(id => { if(!document.getElementById(id).value) isValid = false; });
+                if(!isValid) { showToast("請填寫完 5W1H 面板的每一個欄位！", true); return; }
+            }
+            currentStep = step;
+            updateUI();
+        }
+
+        function autoFillSuggestions() {
+            const loc = document.getElementById('input-location').value;
+            if (suggestions[loc]) {
+                const data = suggestions[loc];
+                if (!document.getElementById('input-style').value) document.getElementById('input-style').value = data.defaultStyle;
+                const kp = document.getElementById('knowledge-panel');
+                const kc = document.getElementById('knowledge-content');
+                kp.classList.remove('knowledge-flash'); void kp.offsetWidth; kp.classList.add('knowledge-flash');
+                let htmlStr = '<ul class="space-y-3">';
+                data.knowledge.forEach(k => { htmlStr += `<li class="leading-relaxed"><span class="font-bold text-teal-800">${k.split('】')[0]}】</span>${k.split('】')[1]}</li>`; });
+                htmlStr += '</ul>'; kc.innerHTML = htmlStr;
+                updateDynamicGoal();
+                if (!isCustomCrisisMode) {
+                    document.getElementById('input-when').value = data.when;
+                    document.getElementById('input-where').value = data.where;
+                    document.getElementById('input-why').value = data.why;
+                    document.getElementById('input-what').value = data.what;
+                    document.getElementById('input-who').value = data.who;
+                    document.getElementById('input-how').value = data.how;
+                    ['input-when', 'input-where', 'input-why', 'input-what', 'input-who', 'input-how'].forEach(id => document.getElementById(id).classList.add('bg-orange-50/30'));
+                }
+                if (!isCustomCharMode) {
+                    document.getElementById('input-char-a-name').value = data.charAName;
+                    document.getElementById('input-char-a-desc').value = data.charADesc;
+                    document.getElementById('input-char-a-secret').value = data.charASecret;
+                    document.getElementById('input-char-b-name').value = data.charBName;
+                    document.getElementById('input-char-b-desc').value = data.charBDesc;
+                    document.getElementById('input-char-b-secret').value = data.charBSecret;
+                    document.getElementById('input-choice').value = data.choice;
+                    ['input-char-a-name', 'input-char-a-desc'].forEach(id => document.getElementById(id).classList.add('bg-blue-50/30'));
+                    ['input-char-b-name', 'input-char-b-desc'].forEach(id => document.getElementById(id).classList.add('bg-red-50/30'));
+                    document.getElementById('input-choice').classList.add('bg-indigo-50/30');
+                }
+                showToast("已載入文史知識點與動態範本！");
+            }
+        }
+
+        function generateScript() {
+            if(!document.getElementById('input-choice').value) { showToast("請填寫終極抉擇點！", true); return; }
+            globalScriptData = {
+                location: document.getElementById('input-location').value || '未指定',
+                style: document.getElementById('input-style').value || '未指定',
+                goal: document.getElementById('input-goal').value || '未指定',
+                when: document.getElementById('input-when').value || '60',
+                where: document.getElementById('input-where').value || '未指定',
+                why: document.getElementById('input-why').value || '未指定',
+                what: document.getElementById('input-what').value || '未指定',
+                who: document.getElementById('input-who').value || '未指定',
+                how: document.getElementById('input-how').value || '未指定',
+                charA_Name: document.getElementById('input-char-a-name').value || '未知正方',
+                charA_Desc: document.getElementById('input-char-a-desc').value || '無',
+                charA_Secret: document.getElementById('input-char-a-secret').value || '無',
+                charB_Name: document.getElementById('input-char-b-name').value || '未知反方',
+                charB_Desc: document.getElementById('input-char-b-desc').value || '無',
+                charB_Secret: document.getElementById('input-char-b-secret').value || '無',
+                choice: document.getElementById('input-choice').value || '無',
+                isCustomMode: isCustomCharMode
+            };
+            let knowledgeHTML = '';
+            if (suggestions[globalScriptData.location]) {
+                knowledgeHTML = `<div class="bg-teal-50 p-4 rounded-lg border border-teal-200 mb-6"><h4 class="font-bold text-teal-800 mb-2"><i class="fa-solid fa-book-journal-whills"></i> 融入之在地文史要素：</h4><ul class="list-disc pl-5 text-sm text-teal-700 space-y-1">`;
+                suggestions[globalScriptData.location].knowledge.forEach(k => { knowledgeHTML += `<li>${k.replace('📍', '')}</li>`; });
+                knowledgeHTML += `</ul></div>`;
+            }
+            let charHTML = globalScriptData.isCustomMode ? `
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="border border-blue-200 rounded-lg overflow-hidden bg-white shadow-sm"><h4 class="font-bold text-blue-800 bg-blue-50 p-3 border-b border-blue-100 flex items-center gap-2"><i class="fa-solid fa-shield-halved"></i> 協助者：${globalScriptData.charA_Name}</h4><div class="p-4 space-y-3"><p class="text-sm text-slate-700"><span class="font-bold text-slate-500 block mb-1">【行動動機】</span> <br>${globalScriptData.charA_Desc.replace(/\n/g, '<br>')}</p><div class="bg-blue-50/50 p-3 rounded border border-blue-100"><p class="text-xs text-slate-600"><span class="font-bold text-blue-700 block mb-1"><i class="fa-solid fa-user-secret"></i> 隱藏秘密 / 弱點</span> <br>${globalScriptData.charA_Secret.replace(/\n/g, '<br>')}</p></div></div></div>
+                    <div class="border border-red-200 rounded-lg overflow-hidden bg-white shadow-sm"><h4 class="font-bold text-red-800 bg-red-50 p-3 border-b border-red-100 flex items-center gap-2"><i class="fa-solid fa-user-ninja"></i> 阻礙者：${globalScriptData.charB_Name}</h4><div class="p-4 space-y-3"><p class="text-sm text-slate-700"><span class="font-bold text-slate-500 block mb-1">【行動動機】</span> <br>${globalScriptData.charB_Desc.replace(/\n/g, '<br>')}</p><div class="bg-red-50/50 p-3 rounded border border-red-100"><p class="text-xs text-slate-600"><span class="font-bold text-red-700 block mb-1"><i class="fa-solid fa-mask"></i> 隱藏秘密 / 弱點</span> <br>${globalScriptData.charB_Secret.replace(/\n/g, '<br>')}</p></div></div></div>
+                </div>` : `
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="border border-blue-200 rounded-lg p-4 bg-white shadow-sm"><h4 class="font-bold text-blue-700 border-b border-blue-100 pb-2 mb-2 flex items-center gap-2"><i class="fa-solid fa-shield-halved"></i> ${globalScriptData.charA_Name} (協助者)</h4><p class="text-sm text-slate-600">${globalScriptData.charA_Desc}</p></div>
+                    <div class="border border-red-200 rounded-lg p-4 bg-white shadow-sm"><h4 class="font-bold text-red-700 border-b border-red-100 pb-2 mb-2 flex items-center gap-2"><i class="fa-solid fa-user-ninja"></i> ${globalScriptData.charB_Name} (阻礙者)</h4><p class="text-sm text-slate-600">${globalScriptData.charB_Desc}</p></div>
+                </div>`;
+            const outputHTML = `<div class="text-center mb-8 border-b-2 border-slate-200 pb-6"><h1 class="text-3xl font-black text-slate-800 mb-2">水路旅人：${globalScriptData.location.split(' ')[0]} 密室企劃</h1><p class="text-lg text-teal-600 font-bold">設定風格：${globalScriptData.style}</p></div>${knowledgeHTML}<div class="space-y-8"><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-teal-500 pl-3 mb-4">一、 玩家終極任務</h3><div class="bg-slate-50 p-4 rounded-lg border border-slate-200"><p class="text-slate-700 leading-relaxed font-medium">🎯 <br>${globalScriptData.goal.replace(/\n/g, '<br>')}</p></div></section><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-orange-500 pl-3 mb-4">二、 5W1H 危機情境設定</h3><div class="bg-orange-50 rounded-lg border border-orange-200 overflow-hidden"><div class="grid grid-cols-1 md:grid-cols-2"><div class="p-4 border-b md:border-b-0 md:border-r border-orange-200"><p class="mb-3 text-sm"><span class="font-bold text-orange-700 inline-block w-20">[Where] 場域</span> <span class="text-slate-700">${globalScriptData.where}</span></p><p class="mb-3 text-sm"><span class="font-bold text-orange-700 inline-block w-20">[Why] 起因</span> <span class="text-slate-700">${globalScriptData.why}</span></p><p class="text-sm"><span class="font-bold text-orange-700 inline-block w-20">[Who] 波及</span> <span class="text-slate-700">${globalScriptData.who}</span></p></div><div class="p-4"><p class="mb-3 text-sm"><span class="font-bold text-red-600 inline-block w-20">[When] 倒數</span> <span class="text-slate-700 font-bold">${globalScriptData.when} 分鐘</span></p><p class="mb-3 text-sm"><span class="font-bold text-red-600 inline-block w-20">[What] 觸發</span> <span class="text-slate-700">當時間歸零, ${globalScriptData.what}</span></p><p class="text-sm"><span class="font-bold text-red-600 inline-block w-20">[How] 代價</span> <span class="text-slate-700">${globalScriptData.how}</span></p></div></div></div></section><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-indigo-500 pl-3 mb-4">三、 角色與人物深度設定</h3>${charHTML}</section><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-slate-700 pl-3 mb-4">四、 最終道德抉擇點</h3><div class="bg-slate-100 p-5 rounded-lg border border-slate-300"><p class="text-slate-700 font-medium leading-relaxed">${globalScriptData.choice.replace(/\n/g, '<br>')}</p></div></section></div>`;
+            document.getElementById('script-output').innerHTML = outputHTML;
+            goToStep(4);
+        }
+
+        const apiKey = ""; 
+
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) { if (i === maxRetries - 1) throw error; await new Promise(resolve => setTimeout(resolve, delays[i])); }
+            }
+        }
+
+        async function enhanceScriptWithAI() {
+            if (!globalScriptData) { showToast("請先完成基礎設定！", true); return; }
+            const outputDiv = document.getElementById('script-output');
+            outputDiv.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-center"><i class="fa-solid fa-wand-magic-sparkles fa-bounce text-5xl text-indigo-500 mb-6"></i><h3 class="text-2xl font-bold text-slate-800 mb-2">生成式 AI 運算中</h3><p class="text-slate-500">正在為您擴寫充滿場景細節與沉浸感的密室逃脫劇本, 這大約需要幾秒鐘的時間...</p></div>`;
+            const promptText = `請根據以下學生設定的密室逃脫大綱, 擴寫成一份充滿沉浸感、戲劇張力且場景細節豐富的「密室逃脫劇本企劃書」。請直接輸出 HTML 格式（使用 <h3>, <p>, <ul>, <li>, <strong> 等標籤）, 請勿包含 \`\`\`html 標籤。\n【劇本大綱設定】\n- 地點：${globalScriptData.location}\n- 風格：${globalScriptData.style}\n- 任務目標：${globalScriptData.goal}\n- 危機倒數：${globalScriptData.when} 分鐘, 發生在 ${globalScriptData.where}。因為 ${globalScriptData.why}, 當時間歸零時會 ${globalScriptData.what}, 波及 ${globalScriptData.who}。失敗代價是 ${globalScriptData.how}。\n- 協助者：${globalScriptData.charA_Name} (動機: ${globalScriptData.charA_Desc}, 秘密: ${globalScriptData.charA_Secret || '無'})\n- 阻礙者：${globalScriptData.charB_Name} (動機: ${globalScriptData.charB_Desc}, 秘密: ${globalScriptData.charB_Secret || '無'})\n- 終極道德抉擇：${globalScriptData.choice}\n【擴寫要求】\n1. 加上充滿畫面感的「開場引言（前導故事）」。\n2. 為危機場景補充細緻的環境描寫。\n3. 將道德抉擇點描寫得更具戲劇性。\n4. 補充 1~2 個符合此情境的「實體機關或解謎概念」。\n5. 全文需使用繁體中文。`;
+            const payload = { contents: [{ parts: [{ text: promptText }] }], systemInstruction: { parts: [{ text: "你是一位頂尖的實境遊戲與密室逃脫劇本設計師。你的文筆懸疑、有畫面感, 擅長將歷史文史知識轉化為引人入勝的遊戲體驗。" }] } };
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const result = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                let aiHTML = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (aiHTML) {
+                    aiHTML = aiHTML.replace(/```html\n?/g, '').replace(/```\n?/g, '');
+                    let knowledgeHTML = suggestions[globalScriptData.location] ? `<div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mb-6 shadow-sm"><h4 class="font-bold text-indigo-800 mb-2"><i class="fa-solid fa-book-journal-whills"></i> 劇本核心文史知識：</h4><ul class="list-disc pl-5 text-sm text-indigo-700 space-y-1">${suggestions[globalScriptData.location].knowledge.map(k => `<li>${k.replace('📍', '')}</li>`).join('')}</ul></div>` : '';
+                    outputDiv.innerHTML = `<div class="text-center mb-8 border-b-2 border-slate-200 pb-6"><h1 class="text-3xl font-black text-slate-800 mb-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-2"></i>AI 擴寫劇本：${globalScriptData.location.split(' ')[0]}</h1><p class="text-lg text-indigo-600 font-bold">風格：${globalScriptData.style}</p></div>${knowledgeHTML}<div class="ai-prose">${aiHTML}</div>`;
+                    showToast("劇本 AI 擴寫完成！");
+                }
+            } catch (error) { outputDiv.innerHTML = `<div class="text-red-500 font-bold py-12 text-center flex flex-col items-center"><i class="fa-solid fa-triangle-exclamation text-4xl mb-4"></i> <p class="text-xl">AI 生成失敗</p></div>`; }
+        }
+
+        function copyScript() { const outputDiv = document.getElementById('script-output'); if (!outputDiv || outputDiv.innerText.trim() === '') return; const textarea = document.createElement('textarea'); textarea.value = outputDiv.innerText; document.body.appendChild(textarea); textarea.select(); document.execCommand('copy'); document.body.removeChild(textarea); showToast("劇本已複製到剪貼簿！"); }
+        function exportWord() { const outputDiv = document.getElementById('script-output'); if (!outputDiv || !outputDiv.innerHTML.trim()) return; const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>body { font-family: '微軟正黑體'; line-height: 1.6; } h3 { color: #0f172a; border-left: 4px solid #0ea5e9; padding-left: 10px; }</style></head><body>${outputDiv.innerHTML}</body></html>`; const blob = new Blob(['\ufeff', html], { type: 'application/msword' }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `水路旅人劇本_${globalScriptData.location.split(' ')[0]}.doc`; a.click(); URL.revokeObjectURL(url); showToast("Word 檔案下載中！"); }
+        function exportPDF() { const element = document.getElementById('script-output'); if (!element || !element.innerText.trim()) return; showToast("PDF 產生中..."); const opt = { margin: 10, filename: `水路旅人劇本_${globalScriptData.location.split(' ')[0]}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }; html2pdf().set(opt).from(element).save().then(() => showToast("PDF 檔案下載完成！")); }
+        function showToast(msg, isError = false) { const toast = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; toast.classList.remove('translate-y-20', 'opacity-0'); setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000); }
+
+        updateUI();
+    </script>
+</body>
+</html>
