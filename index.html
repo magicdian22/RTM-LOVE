@@ -816,7 +816,7 @@
             
             // 雙棲智能切換模式 + 模型自動降級重試機制
             const modelsToTry = userApiKey 
-                ? ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-pro"] // 自訂金鑰的嘗試順序
+                ? ["gemini-1.5-flash"] // 只用最穩定的 1.5-flash，拔除無效的舊版
                 : ["gemini-2.5-flash-preview-09-2025"]; // 平台預設
             
             let aiHTML = null;
