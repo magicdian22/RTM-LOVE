@@ -222,7 +222,7 @@
                                 </div>
                                 <div class="col-span-2">
                                     <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-circle-question text-orange-500 mr-1"></i> [Why] 危機起因 <span class="text-red-500">*</span></label>
-                                    <input type="text" id="input-why" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition-all bg-orange-50/30" placeholder="例如：賽洛瑪等級的超級颱風破壞了排煙系統">
+                                    <input type="text" id="input-why" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition-all bg-orange-50/30" placeholder="為什麼會有危機？例如：賽洛瑪等級的超級颱風破壞了排煙系統">
                                 </div>
                                 <div class="col-span-2">
                                     <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-meteor text-orange-500 mr-1"></i> [What] 觸發事件 <span class="text-red-500">*</span></label>
@@ -348,10 +348,14 @@
                             <p class="text-sm text-slate-500 mt-1">您可以直接匯出大綱，或點擊「AI 智能擴寫」獲得充滿畫面感的完整劇情！</p>
                         </div>
                         <div class="flex flex-wrap gap-2 justify-start items-center p-3 bg-slate-100 rounded-lg border border-slate-200 shadow-sm">
+                            <!-- 新增 API Key 輸入框 -->
+                            <div class="flex items-center gap-2 border-r border-slate-300 pr-3 mr-1">
+                                <i class="fa-solid fa-key text-slate-400"></i>
+                                <input type="password" id="gemini-api-key" placeholder="輸入 Gemini API Key" class="px-2 py-1.5 border border-slate-300 rounded text-sm w-40 focus:outline-none focus:ring-2 focus:ring-purple-500" title="在 GitHub Pages 等環境使用時，請輸入您的 Google Gemini API Key 以啟用 AI 功能">
+                            </div>
                             <button onclick="enhanceScriptWithAI()" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 text-sm transition-all transform hover:scale-105">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> AI 智能擴寫
                             </button>
-                            <div class="w-px h-6 bg-slate-300 mx-2"></div>
                             <button onclick="copyScript()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded shadow flex items-center gap-2 text-sm transition-colors">
                                 <i class="fa-regular fa-copy"></i> 複製劇本
                             </button>
@@ -768,8 +772,9 @@
             goToStep(4);
         }
 
-        const apiKey = ""; 
-
+        // ==========================================
+        // 修正：從輸入框抓取使用者填入的 API Key
+        // ==========================================
         async function fetchWithRetry(url, options, maxRetries = 5) {
             const delays = [1000, 2000, 4000, 8000, 16000];
             for (let i = 0; i < maxRetries; i++) {
@@ -782,12 +787,29 @@
         }
 
         async function enhanceScriptWithAI() {
+            // 從畫面上的輸入框取得 API Key
+            const apiKeyInput = document.getElementById('gemini-api-key');
+            const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+
+            // 如果是在 GitHub Pages 上，使用者必須輸入 API Key 才能呼叫 AI
+            if (!apiKey) {
+                showToast("請先輸入 Gemini API Key 才能啟用 AI 功能！", true);
+                // 可以加個醒目提示
+                if (apiKeyInput) apiKeyInput.focus();
+                return;
+            }
+
             if (!globalScriptData) { showToast("請先完成基礎設定！", true); return; }
+            
             const outputDiv = document.getElementById('script-output');
             outputDiv.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-center"><i class="fa-solid fa-wand-magic-sparkles fa-bounce text-5xl text-indigo-500 mb-6"></i><h3 class="text-2xl font-bold text-slate-800 mb-2">生成式 AI 運算中</h3><p class="text-slate-500">正在為您擴寫充滿場景細節與沉浸感的密室逃脫劇本, 這大約需要幾秒鐘的時間...</p></div>`;
+            
             const promptText = `請根據以下學生設定的密室逃脫大綱, 擴寫成一份充滿沉浸感、戲劇張力且場景細節豐富的「密室逃脫劇本企劃書」。請直接輸出 HTML 格式（使用 <h3>, <p>, <ul>, <li>, <strong> 等標籤）, 請勿包含 \`\`\`html 標籤。\n【劇本大綱設定】\n- 地點：${globalScriptData.location}\n- 風格：${globalScriptData.style}\n- 任務目標：${globalScriptData.goal}\n- 危機倒數：${globalScriptData.when} 分鐘, 發生在 ${globalScriptData.where}。因為 ${globalScriptData.why}, 當時間歸零時會 ${globalScriptData.what}, 波及 ${globalScriptData.who}。失敗代價是 ${globalScriptData.how}。\n- 協助者：${globalScriptData.charA_Name} (動機: ${globalScriptData.charA_Desc}, 秘密: ${globalScriptData.charA_Secret || '無'})\n- 阻礙者：${globalScriptData.charB_Name} (動機: ${globalScriptData.charB_Desc}, 秘密: ${globalScriptData.charB_Secret || '無'})\n- 終極道德抉擇：${globalScriptData.choice}\n【擴寫要求】\n1. 加上充滿畫面感的「開場引言（前導故事）」。\n2. 為危機場景補充細緻的環境描寫。\n3. 將道德抉擇點描寫得更具戲劇性。\n4. 補充 1~2 個符合此情境的「實體機關或解謎概念」。\n5. 全文需使用繁體中文。`;
+            
             const payload = { contents: [{ parts: [{ text: promptText }] }], systemInstruction: { parts: [{ text: "你是一位頂尖的實境遊戲與密室逃脫劇本設計師。你的文筆懸疑、有畫面感, 擅長將歷史文史知識轉化為引人入勝的遊戲體驗。" }] } };
+            
             try {
+                // 將使用者輸入的 apiKey 帶入網址
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
                 const result = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 let aiHTML = result.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -797,7 +819,9 @@
                     outputDiv.innerHTML = `<div class="text-center mb-8 border-b-2 border-slate-200 pb-6"><h1 class="text-3xl font-black text-slate-800 mb-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-2"></i>AI 擴寫劇本：${globalScriptData.location.split(' ')[0]}</h1><p class="text-lg text-indigo-600 font-bold">風格：${globalScriptData.style}</p></div>${knowledgeHTML}<div class="ai-prose">${aiHTML}</div>`;
                     showToast("劇本 AI 擴寫完成！");
                 }
-            } catch (error) { outputDiv.innerHTML = `<div class="text-red-500 font-bold py-12 text-center flex flex-col items-center"><i class="fa-solid fa-triangle-exclamation text-4xl mb-4"></i> <p class="text-xl">AI 生成失敗</p></div>`; }
+            } catch (error) { 
+                outputDiv.innerHTML = `<div class="text-red-500 font-bold py-12 text-center flex flex-col items-center"><i class="fa-solid fa-triangle-exclamation text-4xl mb-4"></i> <p class="text-xl">AI 生成失敗</p><p class="text-sm font-normal mt-2 text-slate-600">請確認您的網路連線，或檢查您輸入的 API Key 是否正確。</p><button onclick="generateScript()" class="mt-6 px-6 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition">回到基本劇本</button></div>`; 
+            }
         }
 
         function copyScript() { const outputDiv = document.getElementById('script-output'); if (!outputDiv || outputDiv.innerText.trim() === '') return; const textarea = document.createElement('textarea'); textarea.value = outputDiv.innerText; document.body.appendChild(textarea); textarea.select(); document.execCommand('copy'); document.body.removeChild(textarea); showToast("劇本已複製到剪貼簿！"); }
