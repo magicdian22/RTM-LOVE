@@ -801,9 +801,8 @@
             const apiKeyInput = document.getElementById('gemini-api-key');
             const userApiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
 
-            // 【關鍵修復】：自動判斷使用的模型。自行輸入的金鑰統一採用穩定開放版 gemini-1.5-flash
+            // 【關鍵修復】：讓 Canvas 環境自動接管（留空），或使用外部 GitHub 的金鑰
             const apiKey = userApiKey || "";
-            const modelName = userApiKey ? "gemini-1.5-flash" : "gemini-2.5-flash-preview-09-2025";
 
             if (!window.globalScriptData) { window.showToast("請先完成基礎設定！", true); return; }
             
@@ -815,18 +814,49 @@
             
             const payload = { contents: [{ parts: [{ text: promptText }] }] };
             
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-                const result = await window.fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                let aiHTML = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (aiHTML) {
-                    aiHTML = aiHTML.replace(/```html\n?/g, '').replace(/```\n?/g, '');
-                    let knowledgeHTML = suggestions[window.globalScriptData.location] ? `<div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mb-6 shadow-sm"><h4 class="font-bold text-indigo-800 mb-2"><i class="fa-solid fa-book-journal-whills"></i> 劇本核心文史知識：</h4><ul class="list-disc pl-5 text-sm text-indigo-700 space-y-1">${suggestions[window.globalScriptData.location].knowledge.map(k => `<li>${k.replace('📍', '')}</li>`).join('')}</ul></div>` : '';
-                    outputDiv.innerHTML = `<div class="text-center mb-8 border-b-2 border-slate-200 pb-6"><h1 class="text-3xl font-black text-slate-800 mb-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-2"></i>AI 擴寫劇本：${window.globalScriptData.location.split(' ')[0]}</h1><p class="text-lg text-indigo-600 font-bold">風格：${window.globalScriptData.style}</p></div>${knowledgeHTML}<div class="ai-prose">${aiHTML}</div>`;
-                    window.showToast("劇本 AI 擴寫完成！");
+            // 雙棲智能切換模式 + 模型自動降級重試機制
+            const modelsToTry = userApiKey 
+                ? ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-pro"] // 自訂金鑰的嘗試順序
+                : ["gemini-2.5-flash-preview-09-2025"]; // 平台預設
+            
+            let aiHTML = null;
+            let lastErrorMsg = "未知錯誤";
+
+            for (const modelName of modelsToTry) {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+                    const response = await fetch(url, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify(payload) 
+                    });
+                    
+                    if (!response.ok) {
+                        const errData = await response.json().catch(() => ({}));
+                        throw new Error(errData.error?.message || `HTTP ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    aiHTML = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (aiHTML) {
+                        console.log("Success with model:", modelName);
+                        break; // 成功則跳出迴圈
+                    }
+                } catch (error) {
+                    console.warn(`Model ${modelName} failed:`, error.message);
+                    lastErrorMsg = error.message;
+                    // 繼續嘗試下一個模型
                 }
-            } catch (error) { 
-                outputDiv.innerHTML = `<div class="text-red-500 font-bold py-12 text-center flex flex-col items-center"><i class="fa-solid fa-triangle-exclamation text-4xl mb-4"></i> <p class="text-xl">AI 生成失敗</p><p class="text-sm font-normal mt-2 text-slate-600">錯誤原因：${error.message}</p><p class="text-sm font-normal mt-2 text-slate-600">這通常是因為 API Key 未開通權限、被限制，或格式不對。</p><button onclick="generateScript()" class="mt-6 px-6 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition">回到基本劇本</button></div>`; 
+            }
+
+            if (aiHTML) {
+                aiHTML = aiHTML.replace(/```html\n?/g, '').replace(/```\n?/g, '');
+                let knowledgeHTML = suggestions[window.globalScriptData.location] ? `<div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mb-6 shadow-sm"><h4 class="font-bold text-indigo-800 mb-2"><i class="fa-solid fa-book-journal-whills"></i> 劇本核心文史知識：</h4><ul class="list-disc pl-5 text-sm text-indigo-700 space-y-1">${suggestions[window.globalScriptData.location].knowledge.map(k => `<li>${k.replace('📍', '')}</li>`).join('')}</ul></div>` : '';
+                outputDiv.innerHTML = `<div class="text-center mb-8 border-b-2 border-slate-200 pb-6"><h1 class="text-3xl font-black text-slate-800 mb-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-2"></i>AI 擴寫劇本：${window.globalScriptData.location.split(' ')[0]}</h1><p class="text-lg text-indigo-600 font-bold">風格：${window.globalScriptData.style}</p></div>${knowledgeHTML}<div class="ai-prose">${aiHTML}</div>`;
+                window.showToast("劇本 AI 擴寫完成！");
+            } else {
+                outputDiv.innerHTML = `<div class="text-red-500 font-bold py-12 text-center flex flex-col items-center"><i class="fa-solid fa-triangle-exclamation text-4xl mb-4"></i> <p class="text-xl">AI 生成失敗</p><p class="text-sm font-normal mt-2 text-slate-600">錯誤原因：${lastErrorMsg}</p><p class="text-sm font-normal mt-2 text-slate-600">已自動切換多種模型均失敗。請確認您的 API Key 是否正確且具有額度。</p><button onclick="generateScript()" class="mt-6 px-6 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition">回到基本劇本</button></div>`; 
             }
         };
 
