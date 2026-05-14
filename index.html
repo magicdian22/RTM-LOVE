@@ -776,9 +776,27 @@
             for (let i = 0; i < maxRetries; i++) {
                 try {
                     const response = await fetch(url, options);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    if (!response.ok) {
+                        let errorMsg = `HTTP 錯誤! 狀態碼: ${response.status}`;
+                        try {
+                            const errData = await response.json();
+                            if (errData.error && errData.error.message) {
+                                errorMsg = errData.error.message;
+                            }
+                        } catch(e) {}
+                        
+                        if (response.status >= 400 && response.status < 500) {
+                            throw new Error(errorMsg);
+                        }
+                        throw new Error(errorMsg);
+                    }
                     return await response.json();
-                } catch (error) { if (i === maxRetries - 1) throw error; await new Promise(resolve => setTimeout(resolve, delays[i])); }
+                } catch (error) { 
+                    if (i === maxRetries - 1 || error.message.includes("API key not valid") || error.message.includes("API key") || error.message.includes("not found")) {
+                        throw error; 
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delays[i])); 
+                }
             }
         };
 
@@ -802,7 +820,8 @@
             const payload = { contents: [{ parts: [{ text: promptText }] }], systemInstruction: { parts: [{ text: "你是一位頂尖的實境遊戲與密室逃脫劇本設計師。你的文筆懸疑、有畫面感, 擅長將歷史文史知識轉化為引人入勝的遊戲體驗。" }] } };
             
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                // 使用支援外部 API Key 的 gemini-1.5-flash 模型
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 const result = await window.fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 let aiHTML = result.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (aiHTML) {
@@ -812,7 +831,7 @@
                     window.showToast("劇本 AI 擴寫完成！");
                 }
             } catch (error) { 
-                outputDiv.innerHTML = `<div class="text-red-500 font-bold py-12 text-center flex flex-col items-center"><i class="fa-solid fa-triangle-exclamation text-4xl mb-4"></i> <p class="text-xl">AI 生成失敗</p><p class="text-sm font-normal mt-2 text-slate-600">請確認您的網路連線，或檢查您輸入的 API Key 是否正確。</p><button onclick="generateScript()" class="mt-6 px-6 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition">回到基本劇本</button></div>`; 
+                outputDiv.innerHTML = `<div class="text-red-500 font-bold py-12 text-center flex flex-col items-center"><i class="fa-solid fa-triangle-exclamation text-4xl mb-4"></i> <p class="text-xl">AI 生成失敗</p><p class="text-sm font-normal mt-2 text-slate-600">錯誤原因：${error.message}</p><p class="text-sm font-normal mt-2 text-slate-600">請確認您的網路連線，或檢查您輸入的 API Key 是否正確且具有權限。</p><button onclick="generateScript()" class="mt-6 px-6 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition">回到基本劇本</button></div>`; 
             }
         };
 
