@@ -771,8 +771,8 @@
             window.goToStep(4);
         };
 
-        window.fetchWithRetry = async function(url, options, maxRetries = 5) {
-            const delays = [1000, 2000, 4000, 8000, 16000];
+        window.fetchWithRetry = async function(url, options, maxRetries = 3) {
+            const delays = [1000, 2000, 4000];
             for (let i = 0; i < maxRetries; i++) {
                 try {
                     const response = await fetch(url, options);
@@ -781,19 +781,15 @@
                         try {
                             const errData = await response.json();
                             if (errData.error && errData.error.message) {
-                                errorMsg = errData.error.message;
+                                errorMsg += " - " + errData.error.message;
                             }
                         } catch(e) {}
-                        
-                        if (response.status >= 400 && response.status < 500) {
-                            throw new Error(errorMsg);
-                        }
                         throw new Error(errorMsg);
                     }
                     return await response.json();
                 } catch (error) { 
                     const msg = error.message.toLowerCase();
-                    if (i === maxRetries - 1 || msg.includes("api key") || msg.includes("403") || msg.includes("400") || msg.includes("not found")) {
+                    if (i === maxRetries - 1 || msg.includes("api key") || msg.includes("key not valid") || msg.includes("403") || msg.includes("400") || msg.includes("not found")) {
                         throw error; 
                     }
                     await new Promise(resolve => setTimeout(resolve, delays[i])); 
@@ -805,7 +801,7 @@
             const apiKeyInput = document.getElementById('gemini-api-key');
             const userApiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
 
-            // 【關鍵修復】：讓 Canvas 環境自動接管（留空），或使用外部 GitHub 的金鑰
+            // 【關鍵修復】：自動判斷使用的模型。自行輸入的金鑰統一採用穩定開放版 gemini-1.5-flash
             const apiKey = userApiKey || "";
             const modelName = userApiKey ? "gemini-1.5-flash" : "gemini-2.5-flash-preview-09-2025";
 
@@ -814,9 +810,10 @@
             const outputDiv = document.getElementById('script-output');
             outputDiv.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-center"><i class="fa-solid fa-wand-magic-sparkles fa-bounce text-5xl text-indigo-500 mb-6"></i><h3 class="text-2xl font-bold text-slate-800 mb-2">生成式 AI 運算中</h3><p class="text-slate-500">正在為您擴寫充滿場景細節與沉浸感的密室逃脫劇本, 這大約需要幾秒鐘的時間...</p></div>`;
             
-            const promptText = `請根據以下學生設定的密室逃脫大綱, 擴寫成一份充滿沉浸感、戲劇張力且場景細節豐富的「密室逃脫劇本企劃書」。請直接輸出 HTML 格式（使用 <h3>, <p>, <ul>, <li>, <strong> 等標籤）, 請勿包含 \`\`\`html 標籤。\n【劇本大綱設定】\n- 地點：${window.globalScriptData.location}\n- 風格：${window.globalScriptData.style}\n- 任務目標：${window.globalScriptData.goal}\n- 危機倒數：${window.globalScriptData.when} 分鐘, 發生在 ${window.globalScriptData.where}。因為 ${window.globalScriptData.why}, 當時間歸零時會 ${window.globalScriptData.what}, 波及 ${window.globalScriptData.who}。失敗代價是 ${window.globalScriptData.how}。\n- 協助者：${window.globalScriptData.charA_Name} (動機: ${window.globalScriptData.charA_Desc}, 秘密: ${window.globalScriptData.charA_Secret || '無'})\n- 阻礙者：${window.globalScriptData.charB_Name} (動機: ${window.globalScriptData.charB_Desc}, 秘密: ${window.globalScriptData.charB_Secret || '無'})\n- 終極道德抉擇：${window.globalScriptData.choice}\n【擴寫要求】\n1. 加上充滿畫面感的「開場引言（前導故事）」。\n2. 為危機場景補充細緻的環境描寫。\n3. 將道德抉擇點描寫得更具戲劇性。\n4. 補充 1~2 個符合此情境的「實體機關或解謎概念」。\n5. 全文需使用繁體中文。`;
+            // 移除可能引起 400 錯誤的 systemInstruction 複雜結構，改為單純的角色與指示 Prompt 結構
+            const promptText = `(系統指示：你是一位頂尖的實境遊戲與密室逃脫劇本設計師。你的文筆懸疑、有畫面感, 擅長將歷史文史知識轉化為引人入勝的遊戲體驗。)\n\n請根據以下學生設定的密室逃脫大綱, 擴寫成一份充滿沉浸感、戲劇張力且場景細節豐富的「密室逃脫劇本企劃書」。請直接輸出 HTML 格式（使用 <h3>, <p>, <ul>, <li>, <strong> 等標籤進行美觀排版）, 請勿包含 \`\`\`html 標籤。\n\n【劇本大綱設定】\n- 地點：${window.globalScriptData.location}\n- 風格：${window.globalScriptData.style}\n- 任務目標：${window.globalScriptData.goal}\n- 危機倒數：${window.globalScriptData.when} 分鐘, 發生在 ${window.globalScriptData.where}。因為 ${window.globalScriptData.why}, 當時間歸零時會 ${window.globalScriptData.what}, 波及 ${window.globalScriptData.who}。失敗代價是 ${window.globalScriptData.how}。\n- 協助者：${window.globalScriptData.charA_Name} (動機: ${window.globalScriptData.charA_Desc}, 秘密: ${window.globalScriptData.charA_Secret || '無'})\n- 阻礙者：${window.globalScriptData.charB_Name} (動機: ${window.globalScriptData.charB_Desc}, 秘密: ${window.globalScriptData.charB_Secret || '無'})\n- 終極道德抉擇：${window.globalScriptData.choice}\n\n【擴寫要求】\n1. 加上充滿畫面感的「開場引言（前導故事）」。\n2. 為危機場景補充細緻的環境描寫。\n3. 將道德抉擇點描寫得更具戲劇性。\n4. 補充 1~2 個符合此情境的「實體機關或解謎概念」。\n5. 全文需使用繁體中文。`;
             
-            const payload = { contents: [{ role: "user", parts: [{ text: promptText }] }], systemInstruction: { parts: [{ text: "你是一位頂尖的實境遊戲與密室逃脫劇本設計師。你的文筆懸疑、有畫面感, 擅長將歷史文史知識轉化為引人入勝的遊戲體驗。" }] } };
+            const payload = { contents: [{ parts: [{ text: promptText }] }] };
             
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
@@ -829,7 +826,7 @@
                     window.showToast("劇本 AI 擴寫完成！");
                 }
             } catch (error) { 
-                outputDiv.innerHTML = `<div class="text-red-500 font-bold py-12 text-center flex flex-col items-center"><i class="fa-solid fa-triangle-exclamation text-4xl mb-4"></i> <p class="text-xl">AI 生成失敗</p><p class="text-sm font-normal mt-2 text-slate-600">錯誤原因：${error.message}</p><p class="text-sm font-normal mt-2 text-slate-600">請確認您的網路連線，或檢查您輸入的 API Key 是否正確且具有權限。</p><button onclick="generateScript()" class="mt-6 px-6 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition">回到基本劇本</button></div>`; 
+                outputDiv.innerHTML = `<div class="text-red-500 font-bold py-12 text-center flex flex-col items-center"><i class="fa-solid fa-triangle-exclamation text-4xl mb-4"></i> <p class="text-xl">AI 生成失敗</p><p class="text-sm font-normal mt-2 text-slate-600">錯誤原因：${error.message}</p><p class="text-sm font-normal mt-2 text-slate-600">這通常是因為 API Key 未開通權限、被限制，或格式不對。</p><button onclick="generateScript()" class="mt-6 px-6 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition">回到基本劇本</button></div>`; 
             }
         };
 
