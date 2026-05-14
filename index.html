@@ -348,7 +348,7 @@
                             <p class="text-sm text-slate-500 mt-1">您可以直接匯出大綱，或點擊「AI 智能擴寫」獲得充滿畫面感的完整劇情！</p>
                         </div>
                         <div class="flex flex-wrap gap-2 justify-start items-center p-3 bg-slate-100 rounded-lg border border-slate-200 shadow-sm">
-                            <!-- 新增 API Key 輸入框 -->
+                            <!-- API Key 輸入框 -->
                             <div class="flex items-center gap-2 border-r border-slate-300 pr-3 mr-1">
                                 <i class="fa-solid fa-key text-slate-400"></i>
                                 <input type="password" id="gemini-api-key" placeholder="輸入 Gemini API Key" class="px-2 py-1.5 border border-slate-300 rounded text-sm w-40 focus:outline-none focus:ring-2 focus:ring-purple-500" title="在 GitHub Pages 等環境使用時，請輸入您的 Google Gemini API Key 以啟用 AI 功能">
@@ -392,15 +392,14 @@
 
     <script>
         // ==============================
-        // 系統全域變數宣告
+        // 系統全域變數與函數明確綁定 (防止沙盒執行錯誤)
         // ==============================
-        let currentStep = 1;
-        let isCustomGoalMode = false;
-        let isCustomCrisisMode = false; 
-        let isCustomCharMode = false;    
-        let globalScriptData = null;
+        window.currentStep = 1;
+        window.isCustomGoalMode = false;
+        window.isCustomCrisisMode = false; 
+        window.isCustomCharMode = false;    
+        window.globalScriptData = null;
 
-        // 結合文史與角色設定的預設資料
         const suggestions = {
             "源頭及曹公圳水系 (九曲堂車站/三和瓦窯/高屏溪舊鐵橋/臺灣鳳梨工場)": {
                 defaultStyle: "🏛️ 時代考據風 (百年工藝、傳統瓦窯、歷史還原)",
@@ -492,7 +491,7 @@
             }
         };
 
-        function getGoalForStyleAndLocation(loc, styleStr) {
+        window.getGoalForStyleAndLocation = function(loc, styleStr) {
             let styleKey = "考據"; 
             if (styleStr.includes("生態")) styleKey = "生態";
             else if (styleStr.includes("考據")) styleKey = "考據";
@@ -555,51 +554,51 @@
                 return matrix[loc][styleKey];
             }
             return "";
-        }
+        };
 
-        function updateDynamicGoal() {
-            if (isCustomGoalMode) return; 
+        window.updateDynamicGoal = function() {
+            if (window.isCustomGoalMode) return; 
             const loc = document.getElementById('input-location').value;
             const styleStr = document.getElementById('input-style').value;
             const inputGoal = document.getElementById('input-goal');
             if (!loc || !styleStr) return;
-            const newGoal = getGoalForStyleAndLocation(loc, styleStr);
+            const newGoal = window.getGoalForStyleAndLocation(loc, styleStr);
             if (newGoal) {
                 inputGoal.value = newGoal;
                 inputGoal.classList.add('bg-teal-50/30'); 
             }
-        }
+        };
 
-        function toggleGoalMode(mode) {
+        window.toggleGoalMode = function(mode) {
             const btnPreset = document.getElementById('btn-preset-goal');
             const btnCustom = document.getElementById('btn-custom-goal');
             const inputGoal = document.getElementById('input-goal');
             if (mode === 'custom') {
-                isCustomGoalMode = true;
+                window.isCustomGoalMode = true;
                 btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-teal-700 shadow transition-all";
                 btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
                 inputGoal.value = "【行動】（請填入：尋找 / 修復 / 啟動 / 駭入 / 解開...）\n\n【關鍵物】（請填入與背景相關的物品, 例如：金鑽鳳梨罐頭 / TR磚 / 水脈圖...）\n\n【最終目的】（請填入逃脫或拯救的結果...）";
                 inputGoal.classList.remove('bg-teal-50/30');
             } else {
-                isCustomGoalMode = false;
+                window.isCustomGoalMode = false;
                 btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-teal-700 shadow transition-all";
                 btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
-                updateDynamicGoal();
+                window.updateDynamicGoal();
             }
-        }
+        };
 
-        function toggleCrisisMode(mode) {
+        window.toggleCrisisMode = function(mode) {
             const btnPreset = document.getElementById('btn-preset-crisis');
             const btnCustom = document.getElementById('btn-custom-crisis');
             const loc = document.getElementById('input-location').value;
             const inputs = ['input-when', 'input-where', 'input-why', 'input-what', 'input-who', 'input-how'];
             if (mode === 'custom') {
-                isCustomCrisisMode = true;
+                window.isCustomCrisisMode = true;
                 btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-orange-700 shadow transition-all";
                 btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
                 inputs.forEach(id => { document.getElementById(id).value = ''; document.getElementById(id).classList.remove('bg-orange-50/30'); });
             } else {
-                isCustomCrisisMode = false;
+                window.isCustomCrisisMode = false;
                 btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-orange-700 shadow transition-all";
                 btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
                 if (suggestions[loc]) {
@@ -612,15 +611,15 @@
                     inputs.forEach(id => document.getElementById(id).classList.add('bg-orange-50/30'));
                 }
             }
-        }
+        };
 
-        function toggleCharMode(mode) {
+        window.toggleCharMode = function(mode) {
             const btnPreset = document.getElementById('btn-preset-char');
             const btnCustom = document.getElementById('btn-custom-char');
             const customPanels = document.querySelectorAll('.custom-char-panel');
             const loc = document.getElementById('input-location').value;
             if (mode === 'custom') {
-                isCustomCharMode = true;
+                window.isCustomCharMode = true;
                 btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-indigo-700 shadow transition-all";
                 btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
                 customPanels.forEach(p => { p.classList.remove('hidden'); p.classList.add('visible'); });
@@ -633,7 +632,7 @@
                 document.getElementById('input-choice').value = "【情境】玩家獲得了...\n【選項一】交給A會...\n【選項二】交給B會...";
                 ['input-char-a-name','input-char-a-desc','input-char-b-name','input-char-b-desc','input-choice'].forEach(id => document.getElementById(id).classList.remove('bg-blue-50/30', 'bg-red-50/30', 'bg-indigo-50/30'));
             } else {
-                isCustomCharMode = false;
+                window.isCustomCharMode = false;
                 btnPreset.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-indigo-700 shadow transition-all";
                 btnCustom.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
                 customPanels.forEach(p => { p.classList.remove('visible'); p.classList.add('hidden'); });
@@ -650,21 +649,21 @@
                     document.getElementById('input-choice').classList.add('bg-indigo-50/30');
                 }
             }
-        }
+        };
 
-        function updateUI() {
+        window.updateUI = function() {
             document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
-            document.getElementById(`step-${currentStep}`).classList.add('active');
+            document.getElementById(`step-${window.currentStep}`).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach((btn, index) => {
                 const stepNum = index + 1;
                 const icon = btn.querySelector('.step-icon');
                 const title = btn.querySelector('.step-title');
-                if (stepNum === currentStep) {
+                if (stepNum === window.currentStep) {
                     btn.classList.remove('opacity-50', 'cursor-not-allowed');
                     const colors = ['bg-teal-500', 'bg-orange-500', 'bg-indigo-500', 'bg-slate-800'];
                     icon.className = `w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-md transition-colors step-icon ${colors[stepNum-1]}`;
                     title.classList.add('text-slate-800'); title.classList.remove('text-slate-500');
-                } else if (stepNum < currentStep) {
+                } else if (stepNum < window.currentStep) {
                     btn.classList.remove('opacity-50', 'cursor-not-allowed');
                     icon.className = `w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm bg-green-100 text-green-600 transition-colors step-icon`;
                     icon.innerHTML = '<i class="fa-solid fa-check"></i>';
@@ -676,25 +675,25 @@
                     title.classList.remove('text-slate-800'); title.classList.add('text-slate-500');
                 }
             });
-        }
+        };
 
-        function goToStep(step) {
-            if(currentStep === 1 && step === 2) {
+        window.goToStep = function(step) {
+            if(window.currentStep === 1 && step === 2) {
                 if(!document.getElementById('input-location').value || !document.getElementById('input-goal').value || !document.getElementById('input-style').value) {
-                    showToast("請填寫完第一階段的必填欄位！", true); return;
+                    window.showToast("請填寫完第一階段的必填欄位！", true); return;
                 }
             }
-            if(currentStep === 2 && step === 3) {
+            if(window.currentStep === 2 && step === 3) {
                 const requiredIds = ['input-when', 'input-where', 'input-why', 'input-what', 'input-who', 'input-how'];
                 let isValid = true;
                 requiredIds.forEach(id => { if(!document.getElementById(id).value) isValid = false; });
-                if(!isValid) { showToast("請填寫完 5W1H 面板的每一個欄位！", true); return; }
+                if(!isValid) { window.showToast("請填寫完 5W1H 面板的每一個欄位！", true); return; }
             }
-            currentStep = step;
-            updateUI();
-        }
+            window.currentStep = step;
+            window.updateUI();
+        };
 
-        function autoFillSuggestions() {
+        window.autoFillSuggestions = function() {
             const loc = document.getElementById('input-location').value;
             if (suggestions[loc]) {
                 const data = suggestions[loc];
@@ -705,8 +704,8 @@
                 let htmlStr = '<ul class="space-y-3">';
                 data.knowledge.forEach(k => { htmlStr += `<li class="leading-relaxed"><span class="font-bold text-teal-800">${k.split('】')[0]}】</span>${k.split('】')[1]}</li>`; });
                 htmlStr += '</ul>'; kc.innerHTML = htmlStr;
-                updateDynamicGoal();
-                if (!isCustomCrisisMode) {
+                window.updateDynamicGoal();
+                if (!window.isCustomCrisisMode) {
                     document.getElementById('input-when').value = data.when;
                     document.getElementById('input-where').value = data.where;
                     document.getElementById('input-why').value = data.why;
@@ -715,7 +714,7 @@
                     document.getElementById('input-how').value = data.how;
                     ['input-when', 'input-where', 'input-why', 'input-what', 'input-who', 'input-how'].forEach(id => document.getElementById(id).classList.add('bg-orange-50/30'));
                 }
-                if (!isCustomCharMode) {
+                if (!window.isCustomCharMode) {
                     document.getElementById('input-char-a-name').value = data.charAName;
                     document.getElementById('input-char-a-desc').value = data.charADesc;
                     document.getElementById('input-char-a-secret').value = data.charASecret;
@@ -727,13 +726,13 @@
                     ['input-char-b-name', 'input-char-b-desc'].forEach(id => document.getElementById(id).classList.add('bg-red-50/30'));
                     document.getElementById('input-choice').classList.add('bg-indigo-50/30');
                 }
-                showToast("已載入文史知識點與動態範本！");
+                window.showToast("已載入文史知識點與動態範本！");
             }
-        }
+        };
 
-        function generateScript() {
-            if(!document.getElementById('input-choice').value) { showToast("請填寫終極抉擇點！", true); return; }
-            globalScriptData = {
+        window.generateScript = function() {
+            if(!document.getElementById('input-choice').value) { window.showToast("請填寫終極抉擇點！", true); return; }
+            window.globalScriptData = {
                 location: document.getElementById('input-location').value || '未指定',
                 style: document.getElementById('input-style').value || '未指定',
                 goal: document.getElementById('input-goal').value || '未指定',
@@ -750,32 +749,29 @@
                 charB_Desc: document.getElementById('input-char-b-desc').value || '無',
                 charB_Secret: document.getElementById('input-char-b-secret').value || '無',
                 choice: document.getElementById('input-choice').value || '無',
-                isCustomMode: isCustomCharMode
+                isCustomMode: window.isCustomCharMode
             };
             let knowledgeHTML = '';
-            if (suggestions[globalScriptData.location]) {
+            if (suggestions[window.globalScriptData.location]) {
                 knowledgeHTML = `<div class="bg-teal-50 p-4 rounded-lg border border-teal-200 mb-6"><h4 class="font-bold text-teal-800 mb-2"><i class="fa-solid fa-book-journal-whills"></i> 融入之在地文史要素：</h4><ul class="list-disc pl-5 text-sm text-teal-700 space-y-1">`;
-                suggestions[globalScriptData.location].knowledge.forEach(k => { knowledgeHTML += `<li>${k.replace('📍', '')}</li>`; });
+                suggestions[window.globalScriptData.location].knowledge.forEach(k => { knowledgeHTML += `<li>${k.replace('📍', '')}</li>`; });
                 knowledgeHTML += `</ul></div>`;
             }
-            let charHTML = globalScriptData.isCustomMode ? `
+            let charHTML = window.globalScriptData.isCustomMode ? `
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="border border-blue-200 rounded-lg overflow-hidden bg-white shadow-sm"><h4 class="font-bold text-blue-800 bg-blue-50 p-3 border-b border-blue-100 flex items-center gap-2"><i class="fa-solid fa-shield-halved"></i> 協助者：${globalScriptData.charA_Name}</h4><div class="p-4 space-y-3"><p class="text-sm text-slate-700"><span class="font-bold text-slate-500 block mb-1">【行動動機】</span> <br>${globalScriptData.charA_Desc.replace(/\n/g, '<br>')}</p><div class="bg-blue-50/50 p-3 rounded border border-blue-100"><p class="text-xs text-slate-600"><span class="font-bold text-blue-700 block mb-1"><i class="fa-solid fa-user-secret"></i> 隱藏秘密 / 弱點</span> <br>${globalScriptData.charA_Secret.replace(/\n/g, '<br>')}</p></div></div></div>
-                    <div class="border border-red-200 rounded-lg overflow-hidden bg-white shadow-sm"><h4 class="font-bold text-red-800 bg-red-50 p-3 border-b border-red-100 flex items-center gap-2"><i class="fa-solid fa-user-ninja"></i> 阻礙者：${globalScriptData.charB_Name}</h4><div class="p-4 space-y-3"><p class="text-sm text-slate-700"><span class="font-bold text-slate-500 block mb-1">【行動動機】</span> <br>${globalScriptData.charB_Desc.replace(/\n/g, '<br>')}</p><div class="bg-red-50/50 p-3 rounded border border-red-100"><p class="text-xs text-slate-600"><span class="font-bold text-red-700 block mb-1"><i class="fa-solid fa-mask"></i> 隱藏秘密 / 弱點</span> <br>${globalScriptData.charB_Secret.replace(/\n/g, '<br>')}</p></div></div></div>
+                    <div class="border border-blue-200 rounded-lg overflow-hidden bg-white shadow-sm"><h4 class="font-bold text-blue-800 bg-blue-50 p-3 border-b border-blue-100 flex items-center gap-2"><i class="fa-solid fa-shield-halved"></i> 協助者：${window.globalScriptData.charA_Name}</h4><div class="p-4 space-y-3"><p class="text-sm text-slate-700"><span class="font-bold text-slate-500 block mb-1">【行動動機】</span> <br>${window.globalScriptData.charA_Desc.replace(/\n/g, '<br>')}</p><div class="bg-blue-50/50 p-3 rounded border border-blue-100"><p class="text-xs text-slate-600"><span class="font-bold text-blue-700 block mb-1"><i class="fa-solid fa-user-secret"></i> 隱藏秘密 / 弱點</span> <br>${window.globalScriptData.charA_Secret.replace(/\n/g, '<br>')}</p></div></div></div>
+                    <div class="border border-red-200 rounded-lg overflow-hidden bg-white shadow-sm"><h4 class="font-bold text-red-800 bg-red-50 p-3 border-b border-red-100 flex items-center gap-2"><i class="fa-solid fa-user-ninja"></i> 阻礙者：${window.globalScriptData.charB_Name}</h4><div class="p-4 space-y-3"><p class="text-sm text-slate-700"><span class="font-bold text-slate-500 block mb-1">【行動動機】</span> <br>${window.globalScriptData.charB_Desc.replace(/\n/g, '<br>')}</p><div class="bg-red-50/50 p-3 rounded border border-red-100"><p class="text-xs text-slate-600"><span class="font-bold text-red-700 block mb-1"><i class="fa-solid fa-mask"></i> 隱藏秘密 / 弱點</span> <br>${window.globalScriptData.charB_Secret.replace(/\n/g, '<br>')}</p></div></div></div>
                 </div>` : `
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="border border-blue-200 rounded-lg p-4 bg-white shadow-sm"><h4 class="font-bold text-blue-700 border-b border-blue-100 pb-2 mb-2 flex items-center gap-2"><i class="fa-solid fa-shield-halved"></i> ${globalScriptData.charA_Name} (協助者)</h4><p class="text-sm text-slate-600">${globalScriptData.charA_Desc}</p></div>
-                    <div class="border border-red-200 rounded-lg p-4 bg-white shadow-sm"><h4 class="font-bold text-red-700 border-b border-red-100 pb-2 mb-2 flex items-center gap-2"><i class="fa-solid fa-user-ninja"></i> ${globalScriptData.charB_Name} (阻礙者)</h4><p class="text-sm text-slate-600">${globalScriptData.charB_Desc}</p></div>
+                    <div class="border border-blue-200 rounded-lg p-4 bg-white shadow-sm"><h4 class="font-bold text-blue-700 border-b border-blue-100 pb-2 mb-2 flex items-center gap-2"><i class="fa-solid fa-shield-halved"></i> ${window.globalScriptData.charA_Name} (協助者)</h4><p class="text-sm text-slate-600">${window.globalScriptData.charA_Desc}</p></div>
+                    <div class="border border-red-200 rounded-lg p-4 bg-white shadow-sm"><h4 class="font-bold text-red-700 border-b border-red-100 pb-2 mb-2 flex items-center gap-2"><i class="fa-solid fa-user-ninja"></i> ${window.globalScriptData.charB_Name} (阻礙者)</h4><p class="text-sm text-slate-600">${window.globalScriptData.charB_Desc}</p></div>
                 </div>`;
-            const outputHTML = `<div class="text-center mb-8 border-b-2 border-slate-200 pb-6"><h1 class="text-3xl font-black text-slate-800 mb-2">水路旅人：${globalScriptData.location.split(' ')[0]} 密室企劃</h1><p class="text-lg text-teal-600 font-bold">設定風格：${globalScriptData.style}</p></div>${knowledgeHTML}<div class="space-y-8"><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-teal-500 pl-3 mb-4">一、 玩家終極任務</h3><div class="bg-slate-50 p-4 rounded-lg border border-slate-200"><p class="text-slate-700 leading-relaxed font-medium">🎯 <br>${globalScriptData.goal.replace(/\n/g, '<br>')}</p></div></section><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-orange-500 pl-3 mb-4">二、 5W1H 危機情境設定</h3><div class="bg-orange-50 rounded-lg border border-orange-200 overflow-hidden"><div class="grid grid-cols-1 md:grid-cols-2"><div class="p-4 border-b md:border-b-0 md:border-r border-orange-200"><p class="mb-3 text-sm"><span class="font-bold text-orange-700 inline-block w-20">[Where] 場域</span> <span class="text-slate-700">${globalScriptData.where}</span></p><p class="mb-3 text-sm"><span class="font-bold text-orange-700 inline-block w-20">[Why] 起因</span> <span class="text-slate-700">${globalScriptData.why}</span></p><p class="text-sm"><span class="font-bold text-orange-700 inline-block w-20">[Who] 波及</span> <span class="text-slate-700">${globalScriptData.who}</span></p></div><div class="p-4"><p class="mb-3 text-sm"><span class="font-bold text-red-600 inline-block w-20">[When] 倒數</span> <span class="text-slate-700 font-bold">${globalScriptData.when} 分鐘</span></p><p class="mb-3 text-sm"><span class="font-bold text-red-600 inline-block w-20">[What] 觸發</span> <span class="text-slate-700">當時間歸零, ${globalScriptData.what}</span></p><p class="text-sm"><span class="font-bold text-red-600 inline-block w-20">[How] 代價</span> <span class="text-slate-700">${globalScriptData.how}</span></p></div></div></div></section><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-indigo-500 pl-3 mb-4">三、 角色與人物深度設定</h3>${charHTML}</section><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-slate-700 pl-3 mb-4">四、 最終道德抉擇點</h3><div class="bg-slate-100 p-5 rounded-lg border border-slate-300"><p class="text-slate-700 font-medium leading-relaxed">${globalScriptData.choice.replace(/\n/g, '<br>')}</p></div></section></div>`;
+            const outputHTML = `<div class="text-center mb-8 border-b-2 border-slate-200 pb-6"><h1 class="text-3xl font-black text-slate-800 mb-2">水路旅人：${window.globalScriptData.location.split(' ')[0]} 密室企劃</h1><p class="text-lg text-teal-600 font-bold">設定風格：${window.globalScriptData.style}</p></div>${knowledgeHTML}<div class="space-y-8"><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-teal-500 pl-3 mb-4">一、 玩家終極任務</h3><div class="bg-slate-50 p-4 rounded-lg border border-slate-200"><p class="text-slate-700 leading-relaxed font-medium">🎯 <br>${window.globalScriptData.goal.replace(/\n/g, '<br>')}</p></div></section><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-orange-500 pl-3 mb-4">二、 5W1H 危機情境設定</h3><div class="bg-orange-50 rounded-lg border border-orange-200 overflow-hidden"><div class="grid grid-cols-1 md:grid-cols-2"><div class="p-4 border-b md:border-b-0 md:border-r border-orange-200"><p class="mb-3 text-sm"><span class="font-bold text-orange-700 inline-block w-20">[Where] 場域</span> <span class="text-slate-700">${window.globalScriptData.where}</span></p><p class="mb-3 text-sm"><span class="font-bold text-orange-700 inline-block w-20">[Why] 起因</span> <span class="text-slate-700">${window.globalScriptData.why}</span></p><p class="text-sm"><span class="font-bold text-orange-700 inline-block w-20">[Who] 波及</span> <span class="text-slate-700">${window.globalScriptData.who}</span></p></div><div class="p-4"><p class="mb-3 text-sm"><span class="font-bold text-red-600 inline-block w-20">[When] 倒數</span> <span class="text-slate-700 font-bold">${window.globalScriptData.when} 分鐘</span></p><p class="mb-3 text-sm"><span class="font-bold text-red-600 inline-block w-20">[What] 觸發</span> <span class="text-slate-700">當時間歸零, ${window.globalScriptData.what}</span></p><p class="text-sm"><span class="font-bold text-red-600 inline-block w-20">[How] 代價</span> <span class="text-slate-700">${window.globalScriptData.how}</span></p></div></div></div></section><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-indigo-500 pl-3 mb-4">三、 角色與人物深度設定</h3>${charHTML}</section><section><h3 class="text-xl font-bold text-slate-800 border-l-4 border-slate-700 pl-3 mb-4">四、 最終道德抉擇點</h3><div class="bg-slate-100 p-5 rounded-lg border border-slate-300"><p class="text-slate-700 font-medium leading-relaxed">${window.globalScriptData.choice.replace(/\n/g, '<br>')}</p></div></section></div>`;
             document.getElementById('script-output').innerHTML = outputHTML;
-            goToStep(4);
-        }
+            window.goToStep(4);
+        };
 
-        // ==========================================
-        // 修正：從輸入框抓取使用者填入的 API Key
-        // ==========================================
-        async function fetchWithRetry(url, options, maxRetries = 5) {
+        window.fetchWithRetry = async function(url, options, maxRetries = 5) {
             const delays = [1000, 2000, 4000, 8000, 16000];
             for (let i = 0; i < maxRetries; i++) {
                 try {
@@ -784,52 +780,48 @@
                     return await response.json();
                 } catch (error) { if (i === maxRetries - 1) throw error; await new Promise(resolve => setTimeout(resolve, delays[i])); }
             }
-        }
+        };
 
-        async function enhanceScriptWithAI() {
-            // 從畫面上的輸入框取得 API Key
+        window.enhanceScriptWithAI = async function() {
             const apiKeyInput = document.getElementById('gemini-api-key');
             const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
 
-            // 如果是在 GitHub Pages 上，使用者必須輸入 API Key 才能呼叫 AI
             if (!apiKey) {
-                showToast("請先輸入 Gemini API Key 才能啟用 AI 功能！", true);
-                // 可以加個醒目提示
+                window.showToast("請先輸入 Gemini API Key 才能啟用 AI 功能！", true);
                 if (apiKeyInput) apiKeyInput.focus();
                 return;
             }
 
-            if (!globalScriptData) { showToast("請先完成基礎設定！", true); return; }
+            if (!window.globalScriptData) { window.showToast("請先完成基礎設定！", true); return; }
             
             const outputDiv = document.getElementById('script-output');
             outputDiv.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-center"><i class="fa-solid fa-wand-magic-sparkles fa-bounce text-5xl text-indigo-500 mb-6"></i><h3 class="text-2xl font-bold text-slate-800 mb-2">生成式 AI 運算中</h3><p class="text-slate-500">正在為您擴寫充滿場景細節與沉浸感的密室逃脫劇本, 這大約需要幾秒鐘的時間...</p></div>`;
             
-            const promptText = `請根據以下學生設定的密室逃脫大綱, 擴寫成一份充滿沉浸感、戲劇張力且場景細節豐富的「密室逃脫劇本企劃書」。請直接輸出 HTML 格式（使用 <h3>, <p>, <ul>, <li>, <strong> 等標籤）, 請勿包含 \`\`\`html 標籤。\n【劇本大綱設定】\n- 地點：${globalScriptData.location}\n- 風格：${globalScriptData.style}\n- 任務目標：${globalScriptData.goal}\n- 危機倒數：${globalScriptData.when} 分鐘, 發生在 ${globalScriptData.where}。因為 ${globalScriptData.why}, 當時間歸零時會 ${globalScriptData.what}, 波及 ${globalScriptData.who}。失敗代價是 ${globalScriptData.how}。\n- 協助者：${globalScriptData.charA_Name} (動機: ${globalScriptData.charA_Desc}, 秘密: ${globalScriptData.charA_Secret || '無'})\n- 阻礙者：${globalScriptData.charB_Name} (動機: ${globalScriptData.charB_Desc}, 秘密: ${globalScriptData.charB_Secret || '無'})\n- 終極道德抉擇：${globalScriptData.choice}\n【擴寫要求】\n1. 加上充滿畫面感的「開場引言（前導故事）」。\n2. 為危機場景補充細緻的環境描寫。\n3. 將道德抉擇點描寫得更具戲劇性。\n4. 補充 1~2 個符合此情境的「實體機關或解謎概念」。\n5. 全文需使用繁體中文。`;
+            const promptText = `請根據以下學生設定的密室逃脫大綱, 擴寫成一份充滿沉浸感、戲劇張力且場景細節豐富的「密室逃脫劇本企劃書」。請直接輸出 HTML 格式（使用 <h3>, <p>, <ul>, <li>, <strong> 等標籤）, 請勿包含 \`\`\`html 標籤。\n【劇本大綱設定】\n- 地點：${window.globalScriptData.location}\n- 風格：${window.globalScriptData.style}\n- 任務目標：${window.globalScriptData.goal}\n- 危機倒數：${window.globalScriptData.when} 分鐘, 發生在 ${window.globalScriptData.where}。因為 ${window.globalScriptData.why}, 當時間歸零時會 ${window.globalScriptData.what}, 波及 ${window.globalScriptData.who}。失敗代價是 ${window.globalScriptData.how}。\n- 協助者：${window.globalScriptData.charA_Name} (動機: ${window.globalScriptData.charA_Desc}, 秘密: ${window.globalScriptData.charA_Secret || '無'})\n- 阻礙者：${window.globalScriptData.charB_Name} (動機: ${window.globalScriptData.charB_Desc}, 秘密: ${window.globalScriptData.charB_Secret || '無'})\n- 終極道德抉擇：${window.globalScriptData.choice}\n【擴寫要求】\n1. 加上充滿畫面感的「開場引言（前導故事）」。\n2. 為危機場景補充細緻的環境描寫。\n3. 將道德抉擇點描寫得更具戲劇性。\n4. 補充 1~2 個符合此情境的「實體機關或解謎概念」。\n5. 全文需使用繁體中文。`;
             
             const payload = { contents: [{ parts: [{ text: promptText }] }], systemInstruction: { parts: [{ text: "你是一位頂尖的實境遊戲與密室逃脫劇本設計師。你的文筆懸疑、有畫面感, 擅長將歷史文史知識轉化為引人入勝的遊戲體驗。" }] } };
             
             try {
-                // 將使用者輸入的 apiKey 帶入網址
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                const result = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await window.fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 let aiHTML = result.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (aiHTML) {
                     aiHTML = aiHTML.replace(/```html\n?/g, '').replace(/```\n?/g, '');
-                    let knowledgeHTML = suggestions[globalScriptData.location] ? `<div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mb-6 shadow-sm"><h4 class="font-bold text-indigo-800 mb-2"><i class="fa-solid fa-book-journal-whills"></i> 劇本核心文史知識：</h4><ul class="list-disc pl-5 text-sm text-indigo-700 space-y-1">${suggestions[globalScriptData.location].knowledge.map(k => `<li>${k.replace('📍', '')}</li>`).join('')}</ul></div>` : '';
-                    outputDiv.innerHTML = `<div class="text-center mb-8 border-b-2 border-slate-200 pb-6"><h1 class="text-3xl font-black text-slate-800 mb-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-2"></i>AI 擴寫劇本：${globalScriptData.location.split(' ')[0]}</h1><p class="text-lg text-indigo-600 font-bold">風格：${globalScriptData.style}</p></div>${knowledgeHTML}<div class="ai-prose">${aiHTML}</div>`;
-                    showToast("劇本 AI 擴寫完成！");
+                    let knowledgeHTML = suggestions[window.globalScriptData.location] ? `<div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mb-6 shadow-sm"><h4 class="font-bold text-indigo-800 mb-2"><i class="fa-solid fa-book-journal-whills"></i> 劇本核心文史知識：</h4><ul class="list-disc pl-5 text-sm text-indigo-700 space-y-1">${suggestions[window.globalScriptData.location].knowledge.map(k => `<li>${k.replace('📍', '')}</li>`).join('')}</ul></div>` : '';
+                    outputDiv.innerHTML = `<div class="text-center mb-8 border-b-2 border-slate-200 pb-6"><h1 class="text-3xl font-black text-slate-800 mb-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-2"></i>AI 擴寫劇本：${window.globalScriptData.location.split(' ')[0]}</h1><p class="text-lg text-indigo-600 font-bold">風格：${window.globalScriptData.style}</p></div>${knowledgeHTML}<div class="ai-prose">${aiHTML}</div>`;
+                    window.showToast("劇本 AI 擴寫完成！");
                 }
             } catch (error) { 
                 outputDiv.innerHTML = `<div class="text-red-500 font-bold py-12 text-center flex flex-col items-center"><i class="fa-solid fa-triangle-exclamation text-4xl mb-4"></i> <p class="text-xl">AI 生成失敗</p><p class="text-sm font-normal mt-2 text-slate-600">請確認您的網路連線，或檢查您輸入的 API Key 是否正確。</p><button onclick="generateScript()" class="mt-6 px-6 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition">回到基本劇本</button></div>`; 
             }
-        }
+        };
 
-        function copyScript() { const outputDiv = document.getElementById('script-output'); if (!outputDiv || outputDiv.innerText.trim() === '') return; const textarea = document.createElement('textarea'); textarea.value = outputDiv.innerText; document.body.appendChild(textarea); textarea.select(); document.execCommand('copy'); document.body.removeChild(textarea); showToast("劇本已複製到剪貼簿！"); }
-        function exportWord() { const outputDiv = document.getElementById('script-output'); if (!outputDiv || !outputDiv.innerHTML.trim()) return; const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>body { font-family: '微軟正黑體'; line-height: 1.6; } h3 { color: #0f172a; border-left: 4px solid #0ea5e9; padding-left: 10px; }</style></head><body>${outputDiv.innerHTML}</body></html>`; const blob = new Blob(['\ufeff', html], { type: 'application/msword' }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `水路旅人劇本_${globalScriptData.location.split(' ')[0]}.doc`; a.click(); URL.revokeObjectURL(url); showToast("Word 檔案下載中！"); }
-        function exportPDF() { const element = document.getElementById('script-output'); if (!element || !element.innerText.trim()) return; showToast("PDF 產生中..."); const opt = { margin: 10, filename: `水路旅人劇本_${globalScriptData.location.split(' ')[0]}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }; html2pdf().set(opt).from(element).save().then(() => showToast("PDF 檔案下載完成！")); }
-        function showToast(msg, isError = false) { const toast = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; toast.classList.remove('translate-y-20', 'opacity-0'); setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000); }
+        window.copyScript = function() { const outputDiv = document.getElementById('script-output'); if (!outputDiv || outputDiv.innerText.trim() === '') return; const textarea = document.createElement('textarea'); textarea.value = outputDiv.innerText; document.body.appendChild(textarea); textarea.select(); document.execCommand('copy'); document.body.removeChild(textarea); window.showToast("劇本已複製到剪貼簿！"); };
+        window.exportWord = function() { const outputDiv = document.getElementById('script-output'); if (!outputDiv || !outputDiv.innerHTML.trim()) return; const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>body { font-family: '微軟正黑體'; line-height: 1.6; } h3 { color: #0f172a; border-left: 4px solid #0ea5e9; padding-left: 10px; }</style></head><body>${outputDiv.innerHTML}</body></html>`; const blob = new Blob(['\ufeff', html], { type: 'application/msword' }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `水路旅人劇本_${window.globalScriptData.location.split(' ')[0]}.doc`; a.click(); URL.revokeObjectURL(url); window.showToast("Word 檔案下載中！"); };
+        window.exportPDF = function() { const element = document.getElementById('script-output'); if (!element || !element.innerText.trim()) return; window.showToast("PDF 產生中..."); const opt = { margin: 10, filename: `水路旅人劇本_${window.globalScriptData.location.split(' ')[0]}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }; html2pdf().set(opt).from(element).save().then(() => window.showToast("PDF 檔案下載完成！")); };
+        window.showToast = function(msg, isError = false) { const toast = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; toast.classList.remove('translate-y-20', 'opacity-0'); setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000); };
 
-        updateUI();
+        window.updateUI();
     </script>
 </body>
 </html>
