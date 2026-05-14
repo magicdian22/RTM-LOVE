@@ -351,7 +351,7 @@
                             <!-- API Key 輸入框 -->
                             <div class="flex items-center gap-2 border-r border-slate-300 pr-3 mr-1">
                                 <i class="fa-solid fa-key text-slate-400"></i>
-                                <input type="password" id="gemini-api-key" placeholder="輸入 Gemini API Key" class="px-2 py-1.5 border border-slate-300 rounded text-sm w-40 focus:outline-none focus:ring-2 focus:ring-purple-500" title="在 GitHub Pages 等環境使用時，請輸入您的 Google Gemini API Key 以啟用 AI 功能">
+                                <input type="password" id="gemini-api-key" placeholder="API Key (平台預覽免填)" class="px-2 py-1.5 border border-slate-300 rounded text-sm w-44 focus:outline-none focus:ring-2 focus:ring-purple-500" title="在此平台測試無需輸入。若要放在自己的 GitHub Pages 上執行，請填入 Gemini API Key。">
                             </div>
                             <button onclick="enhanceScriptWithAI()" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 text-sm transition-all transform hover:scale-105">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> AI 智能擴寫
@@ -792,7 +792,8 @@
                     }
                     return await response.json();
                 } catch (error) { 
-                    if (i === maxRetries - 1 || error.message.includes("API key not valid") || error.message.includes("API key") || error.message.includes("not found")) {
+                    const msg = error.message.toLowerCase();
+                    if (i === maxRetries - 1 || msg.includes("api key") || msg.includes("403") || msg.includes("400") || msg.includes("not found")) {
                         throw error; 
                     }
                     await new Promise(resolve => setTimeout(resolve, delays[i])); 
@@ -802,13 +803,11 @@
 
         window.enhanceScriptWithAI = async function() {
             const apiKeyInput = document.getElementById('gemini-api-key');
-            const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+            const userApiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
 
-            if (!apiKey) {
-                window.showToast("請先輸入 Gemini API Key 才能啟用 AI 功能！", true);
-                if (apiKeyInput) apiKeyInput.focus();
-                return;
-            }
+            // 【關鍵修復】：讓 Canvas 環境自動接管（留空），或使用外部 GitHub 的金鑰
+            const apiKey = userApiKey || "";
+            const modelName = userApiKey ? "gemini-1.5-flash" : "gemini-2.5-flash-preview-09-2025";
 
             if (!window.globalScriptData) { window.showToast("請先完成基礎設定！", true); return; }
             
@@ -817,11 +816,10 @@
             
             const promptText = `請根據以下學生設定的密室逃脫大綱, 擴寫成一份充滿沉浸感、戲劇張力且場景細節豐富的「密室逃脫劇本企劃書」。請直接輸出 HTML 格式（使用 <h3>, <p>, <ul>, <li>, <strong> 等標籤）, 請勿包含 \`\`\`html 標籤。\n【劇本大綱設定】\n- 地點：${window.globalScriptData.location}\n- 風格：${window.globalScriptData.style}\n- 任務目標：${window.globalScriptData.goal}\n- 危機倒數：${window.globalScriptData.when} 分鐘, 發生在 ${window.globalScriptData.where}。因為 ${window.globalScriptData.why}, 當時間歸零時會 ${window.globalScriptData.what}, 波及 ${window.globalScriptData.who}。失敗代價是 ${window.globalScriptData.how}。\n- 協助者：${window.globalScriptData.charA_Name} (動機: ${window.globalScriptData.charA_Desc}, 秘密: ${window.globalScriptData.charA_Secret || '無'})\n- 阻礙者：${window.globalScriptData.charB_Name} (動機: ${window.globalScriptData.charB_Desc}, 秘密: ${window.globalScriptData.charB_Secret || '無'})\n- 終極道德抉擇：${window.globalScriptData.choice}\n【擴寫要求】\n1. 加上充滿畫面感的「開場引言（前導故事）」。\n2. 為危機場景補充細緻的環境描寫。\n3. 將道德抉擇點描寫得更具戲劇性。\n4. 補充 1~2 個符合此情境的「實體機關或解謎概念」。\n5. 全文需使用繁體中文。`;
             
-            const payload = { contents: [{ parts: [{ text: promptText }] }], systemInstruction: { parts: [{ text: "你是一位頂尖的實境遊戲與密室逃脫劇本設計師。你的文筆懸疑、有畫面感, 擅長將歷史文史知識轉化為引人入勝的遊戲體驗。" }] } };
+            const payload = { contents: [{ role: "user", parts: [{ text: promptText }] }], systemInstruction: { parts: [{ text: "你是一位頂尖的實境遊戲與密室逃脫劇本設計師。你的文筆懸疑、有畫面感, 擅長將歷史文史知識轉化為引人入勝的遊戲體驗。" }] } };
             
             try {
-                // 使用支援外部 API Key 的 gemini-1.5-flash 模型
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
                 const result = await window.fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 let aiHTML = result.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (aiHTML) {
